@@ -33,8 +33,6 @@ app.MapEndpoints();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApiWithScalar();
-
-    app.ApplyMigrations();
 }
 
 app.MapHealthChecks("health", new HealthCheckOptions

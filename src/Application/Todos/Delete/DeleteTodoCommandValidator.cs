@@ -6,6 +6,6 @@ internal sealed class DeleteTodoCommandValidator : AbstractValidator<DeleteTodoC
 {
     public DeleteTodoCommandValidator()
     {
-        RuleFor(c => c.TodoItemId).NotEmpty();
+        //RuleFor(c => c.TodoItemId).NotEmpty();
     }
 }

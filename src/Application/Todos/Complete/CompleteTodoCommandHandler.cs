@@ -2,14 +2,14 @@
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Todos;
-using Microsoft.EntityFrameworkCore;
+using Dapper;
 using Microsoft.Extensions.Caching.Hybrid;
 using SharedKernel;
 
 namespace Application.Todos.Complete;
 
 internal sealed class CompleteTodoCommandHandler(
-    IApplicationDbContext context,
+    IDbConnectionFactory connectionFactory,
     IDateTimeProvider dateTimeProvider,
     IUserContext userContext,
     HybridCache cache)
@@ -17,28 +17,33 @@ internal sealed class CompleteTodoCommandHandler(
 {
     public async Task<Result> Handle(CompleteTodoCommand command, CancellationToken cancellationToken)
     {
-        TodoItem? todoItem = await context.TodoItems
-            .SingleOrDefaultAsync(t => t.Id == command.TodoItemId && t.UserId == userContext.UserId, cancellationToken);
+        _ = connectionFactory;
+        _ = dateTimeProvider;
+        _ = userContext;
+        _ = cache;
+        throw new NotImplementedException();
+        // TodoItem? todoItem = await context.TodoItems
+        //     .SingleOrDefaultAsync(t => t.Id == command.TodoItemId && t.UserId == userContext.UserId, cancellationToken);
 
-        if (todoItem is null)
-        {
-            return Result.Failure(TodoItemErrors.NotFound(command.TodoItemId));
-        }
+        // if (todoItem is null)
+        // {
+        //     return Result.Failure(TodoItemErrors.NotFound(command.TodoItemId));
+        // }
 
-        if (todoItem.IsCompleted)
-        {
-            return Result.Failure(TodoItemErrors.AlreadyCompleted(command.TodoItemId));
-        }
+        // if (todoItem.IsCompleted)
+        // {
+        //     return Result.Failure(TodoItemErrors.AlreadyCompleted(command.TodoItemId));
+        // }
 
-        todoItem.IsCompleted = true;
-        todoItem.CompletedAt = dateTimeProvider.UtcNow;
+        // todoItem.IsCompleted = true;
+        // todoItem.CompletedAt = dateTimeProvider.UtcNow;
 
-        todoItem.Raise(new TodoItemCompletedDomainEvent(todoItem.Id));
+        // todoItem.Raise(new TodoItemCompletedDomainEvent(todoItem.Id));
 
-        await context.SaveChangesAsync(cancellationToken);
+        // await context.SaveChangesAsync(cancellationToken);
 
-        await cache.RemoveAsync(TodoCacheKeys.ById(todoItem.UserId, todoItem.Id), cancellationToken);
+        // await cache.RemoveAsync(TodoCacheKeys.ById(todoItem.UserId, todoItem.Id), cancellationToken);
 
-        return Result.Success();
+        // return Result.Success();
     }
 }

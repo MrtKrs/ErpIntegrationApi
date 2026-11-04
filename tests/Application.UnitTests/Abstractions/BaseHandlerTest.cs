@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -6,14 +5,14 @@ namespace Application.UnitTests.Abstractions;
 
 public abstract class BaseHandlerTest
 {
-    protected static TestDbContext CreateDbContext()
-    {
-        DbContextOptions<TestDbContext> options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseInMemoryDatabase($"clean-architecture-{Guid.NewGuid()}")
-            .Options;
+    // protected static TestDbContext CreateDbContext()
+    // {
+    //     DbContextOptions<TestDbContext> options = new DbContextOptionsBuilder<TestDbContext>()
+    //         .UseInMemoryDatabase($"clean-architecture-{Guid.NewGuid()}")
+    //         .Options;
 
-        return new TestDbContext(options);
-    }
+    //     return new TestDbContext(options);
+    // }
 
     protected static HybridCache CreateCache()
     {

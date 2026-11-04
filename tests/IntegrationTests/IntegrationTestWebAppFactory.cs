@@ -1,19 +1,19 @@
+using System.Data;
+using Application.Abstractions.Data;
+using Dapper;
 using Infrastructure.Database;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
+
 using Microsoft.Extensions.DependencyInjection;
-using Testcontainers.PostgreSql;
+using Testcontainers.MsSql;
 using Web.Api;
 
 namespace IntegrationTests;
 
 public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("postgres:17")
-        .WithDatabase("clean-architecture")
-        .WithUsername("postgres")
-        .WithPassword("postgres")
+    private readonly MsSqlContainer _dbContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
         .Build();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -35,9 +35,29 @@ public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program
     {
         await _dbContainer.StartAsync();
 
+        // Initialize a dummy schema map
         using IServiceScope scope = Services.CreateScope();
-        ApplicationDbContext dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await dbContext.Database.MigrateAsync();
+        var connectionFactory = scope.ServiceProvider.GetRequiredService<IDbConnectionFactory>();
+        
+        using IDbConnection connection = connectionFactory.CreateConnection();
+
+        //placeholder script. replace with real database table schemas
+        const string initializeSchemaSql = @"
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='TodoItems' AND xtype='U')
+            BEGIN
+                CREATE TABLE TodoItems (
+                    Id UNIQUEIDENTIFIER PRIMARY KEY,
+                    UserId UNIQUEIDENTIFIER NOT NULL,
+                    Description NVARCHAR(MAX) NOT NULL,
+                    IsCompleted BIT NOT NULL,
+                    CreatedAt DATETIME2 NOT NULL,
+                    DueDate DATETIME2 NULL,
+                    Labels NVARCHAR(MAX) NULL,
+                    CompletedAt DATETIME2 NULL
+                );
+            END";
+
+        await connection.ExecuteAsync(initializeSchemaSql);
     }
 
     public new async Task DisposeAsync()

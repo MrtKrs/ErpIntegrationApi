@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace Application.Abstractions.Pagination;
 
 public sealed class PagedList<T>
@@ -16,25 +14,15 @@ public sealed class PagedList<T>
 
     public bool HasPreviousPage => Page > 1;
 
-    public static async Task<PagedList<T>> CreateAsync(
-        IQueryable<T> query,
-        int page,
-        int pageSize,
-        CancellationToken cancellationToken = default)
+    public PagedList(IReadOnlyList<T> items, int totalCount, int page, int pageSize)
     {
-        int totalCount = await query.CountAsync(cancellationToken);
+        Items = items;
+        TotalCount = totalCount;
+        Page = page;
+        PageSize = pageSize;
+    }
 
-        List<T> items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        return new PagedList<T>
-        {
-            Items = items,
-            Page = page,
-            PageSize = pageSize,
-            TotalCount = totalCount
-        };
+    public PagedList()
+    {
     }
 }

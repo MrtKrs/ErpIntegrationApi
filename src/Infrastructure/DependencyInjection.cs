@@ -5,13 +5,11 @@ using Application.Abstractions.Notifications;
 using Infrastructure.Authentication;
 using Infrastructure.Authorization;
 using Infrastructure.Database;
-using Infrastructure.DomainEvents;
+//using Infrastructure.DomainEvents;
 using Infrastructure.Notifications;
 using Infrastructure.Time;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -35,7 +33,7 @@ public static class DependencyInjection
     {
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
-        services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
+        //services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
 
         services.AddScoped<IEmailSender, LoggingEmailSender>();
 
@@ -48,24 +46,30 @@ public static class DependencyInjection
 
     private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
-        string? connectionString = configuration.GetConnectionString("Database");
+        var connectionString = configuration.GetConnectionString("Database") 
+            ?? throw new InvalidOperationException("Connection string 'Database' not found.");
 
-        services.AddDbContext<ApplicationDbContext>(
-            options => options
-                .UseNpgsql(connectionString, npgsqlOptions =>
-                    npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Default))
-                .UseSnakeCaseNamingConvention());
 
-        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        // services.AddDbContext<ApplicationDbContext>(
+        //     options => options
+        //         .UseNpgsql(connectionString, npgsqlOptions =>
+        //             npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Default))
+        //         .UseSnakeCaseNamingConvention());
+
+        // services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+        services.AddSingleton<IDbConnectionFactory>(new DbConnectionFactory( connectionString));
+            //configuration.GetConnectionString("Database")?? throw new InvalidOperationException("Connection string 'Database' not found.")));
 
         return services;
     }
 
     private static IServiceCollection AddHealthChecks(this IServiceCollection services, IConfiguration configuration)
     {
-        services
-            .AddHealthChecks()
-            .AddNpgSql(configuration.GetConnectionString("Database")!);
+        // TODO:
+        _ = configuration;
+        // services
+        //     .AddHealthChecks()
+            //.AddNpgSql(configuration.GetConnectionString("Database")!);
 
         return services;
     }

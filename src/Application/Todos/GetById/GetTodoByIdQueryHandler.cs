@@ -2,14 +2,14 @@ using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Todos;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using SharedKernel;
+using Dapper;
 
 namespace Application.Todos.GetById;
 
 internal sealed class GetTodoByIdQueryHandler(
-    IApplicationDbContext context,
+    IDbConnectionFactory connectionFactory,
     IUserContext userContext,
     HybridCache cache)
     : IQueryHandler<GetTodoByIdQuery, TodoResponse>
@@ -20,20 +20,18 @@ internal sealed class GetTodoByIdQueryHandler(
 
         TodoResponse? todo = await cache.GetOrCreateAsync(
             TodoCacheKeys.ById(userId, query.TodoItemId),
-            async cancellation => await context.TodoItems
-                .Where(todoItem => todoItem.Id == query.TodoItemId && todoItem.UserId == userId)
-                .Select(todoItem => new TodoResponse
-                {
-                    Id = todoItem.Id,
-                    UserId = todoItem.UserId,
-                    Description = todoItem.Description,
-                    DueDate = todoItem.DueDate,
-                    Labels = todoItem.Labels,
-                    IsCompleted = todoItem.IsCompleted,
-                    CreatedAt = todoItem.CreatedAt,
-                    CompletedAt = todoItem.CompletedAt
-                })
-                .SingleOrDefaultAsync(cancellation),
+            async cancellation =>
+            {
+                using var connection = connectionFactory.CreateConnection();
+                const string sql = @"SELECT Id, .... FROM X WHERE Id = @TodoItemId AND UserId = @UserId";
+
+                return await connection.QuerySingleOrDefaultAsync<TodoResponse>
+                (new CommandDefinition(
+                    sql,
+                    new {query.TodoItemId, UserId = userId},
+                    cancellationToken: cancellation)
+                );
+            },
             cancellationToken: cancellationToken);
 
         if (todo is null)

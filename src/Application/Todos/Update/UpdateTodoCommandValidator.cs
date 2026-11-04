@@ -6,8 +6,8 @@ internal sealed class UpdateTodoCommandValidator : AbstractValidator<UpdateTodoC
 {
     public UpdateTodoCommandValidator()
     {
-        RuleFor(c => c.TodoItemId).NotEmpty();
+        // RuleFor(c => c.TodoItemId).NotEmpty();
 
-        RuleFor(c => c.Description).NotEmpty().MaximumLength(500);
+        // RuleFor(c => c.Description).NotEmpty().MaximumLength(500);
     }
 }
