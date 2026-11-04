@@ -67,9 +67,7 @@ public static class DependencyInjection
     {
         // TODO:
         _ = configuration;
-        // services
-        //     .AddHealthChecks()
-            //.AddNpgSql(configuration.GetConnectionString("Database")!);
+        services.AddHealthChecks();
 
         return services;
     }
