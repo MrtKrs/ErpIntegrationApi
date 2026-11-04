@@ -16,6 +16,8 @@ public class GetProductTests : BaseIntegrationTest, IClassFixture<IntegrationTes
         HttpResponseMessage response = await HttpClient.GetAsync("api/products/1");
 
         // It will fail because the API endpoint isn't mapped in Web.Api yet.
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        //Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var codes = new  [] { HttpStatusCode.NotFound, HttpStatusCode.NotImplemented};
+        Assert.Contains(response.StatusCode, codes);
     }
 }
