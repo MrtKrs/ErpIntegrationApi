@@ -1,16 +1,24 @@
 services:
-  web-api:
-    image: ${DOCKER_REGISTRY-}webapi
-    container_name: web-api
-    build:
-      context: .
-      dockerfile: src/Web.Api/Dockerfile
-    ports:
-      - 5000:8080
-      - 5001:8081
-    depends_on:
-      - postgres
-      - observability
+  # =========================================================================
+  # DEACTIVATED FOR LOCAL NATIVE DEVELOPMENT:
+  # The 'webapi' container is disabled to allow running the API natively 
+  # 
+  # TO FULLY CONTAINERIZE LATER, RESOLVE:
+  # 1. Docker bridge networking to resolve external SQL Server hosts.
+  # 2. Linux-compatible SSL/TLS developer certificate (.pfx) export.
+  # =========================================================================
+  # web-api:
+  #   image: ${DOCKER_REGISTRY-}webapi
+  #   container_name: web-api
+  #   build:
+  #     context: .
+  #     dockerfile: src/Web.Api/Dockerfile
+  #   ports:
+  #     - 5000:8080
+  #     - 5001:8081
+  #   depends_on:
+  #     - postgres
+  #     - observability
 
   postgres:
     image: postgres:17
@@ -20,7 +28,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     volumes:
-      - ./.containers/db:/var/lib/postgresql/data
+      - telemetry_db_data:/var/lib/postgresql/data 
     ports:
       - 5432:5432
 
@@ -33,3 +41,6 @@ services:
       - 3000:3000   # Grafana
       - 4317:4317   # OTLP gRPC
       - 4318:4318   # OTLP HTTP
+
+volumes:
+  telemetry_db_data:
