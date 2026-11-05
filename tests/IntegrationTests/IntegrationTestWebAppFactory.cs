@@ -18,6 +18,9 @@ public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.UseSetting("detailedErrors", "true");
+        builder.CaptureStartupErrors(true);
+
         builder.UseSetting("ConnectionStrings:Database", _dbContainer.GetConnectionString());
 
         // Provide deterministic JWT settings so tokens can be issued and validated in tests.
@@ -41,19 +44,14 @@ public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program
         
         using IDbConnection connection = connectionFactory.CreateConnection();
 
-        //placeholder script. replace with real database table schemas
         const string initializeSchemaSql = @"
-            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='TodoItems' AND xtype='U')
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='tblVarer' AND xtype='U')
             BEGIN
-                CREATE TABLE TodoItems (
-                    Id UNIQUEIDENTIFIER PRIMARY KEY,
-                    UserId UNIQUEIDENTIFIER NOT NULL,
-                    Description NVARCHAR(MAX) NOT NULL,
-                    IsCompleted BIT NOT NULL,
-                    CreatedAt DATETIME2 NOT NULL,
-                    DueDate DATETIME2 NULL,
-                    Labels NVARCHAR(MAX) NULL,
-                    CompletedAt DATETIME2 NULL
+                CREATE TABLE [dbo].[tblVarer](
+                    [id] [int] NOT NULL,
+                    [varenummer] [nvarchar](50) NULL,
+                    [varenavn] [nvarchar](1000) NULL,
+                    [standardpris] [nvarchar](50) NULL
                 );
             END";
 
