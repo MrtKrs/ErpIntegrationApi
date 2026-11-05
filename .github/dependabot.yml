@@ -3,4 +3,17 @@ updates:
   - package-ecosystem: "nuget"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+
+groups:
+      minor-and-patches:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+      microsoft-core:
+        patterns:
+          - "Microsoft.*"
+          - "System.*"
