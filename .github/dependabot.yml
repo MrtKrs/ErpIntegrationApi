@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: "weekly"
 
-groups:
+    groups:
       minor-and-patches:
         patterns:
           - "*"
