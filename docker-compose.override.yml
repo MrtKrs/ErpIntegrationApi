@@ -1,4 +1,4 @@
-services:
+#services:
   # web-api:
   #   environment:
   #     - ASPNETCORE_ENVIRONMENT=Development
