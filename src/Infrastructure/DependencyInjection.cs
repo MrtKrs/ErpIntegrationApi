@@ -26,7 +26,7 @@ public static class DependencyInjection
             .AddServices()
             .AddDatabase(configuration)
             .AddHealthChecks(configuration)
-            .AddAuthenticationInternal(configuration)
+            .AddAuthenticationInternal()
             .AddAuthorizationInternal();
 
     private static IServiceCollection AddServices(this IServiceCollection services)
@@ -73,33 +73,35 @@ public static class DependencyInjection
     }
 
     private static IServiceCollection AddAuthenticationInternal(
-        this IServiceCollection services,
-        IConfiguration configuration)
+        this IServiceCollection services)
     {
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(o =>
-            {
-                o.RequireHttpsMetadata = false;
-                o.TokenValidationParameters = new TokenValidationParameters
-                {
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Secret"]!)),
-                    ValidIssuer = configuration["Jwt:Issuer"],
-                    ValidAudience = configuration["Jwt:Audience"],
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
+        services.AddScoped<IApiKeyValidationService, ApiKeyValidationService>();
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultScheme = ApiKeyAuthOptions.SchemeName;
+            options.DefaultAuthenticateScheme = ApiKeyAuthOptions.SchemeName;
+            options.DefaultChallengeScheme = ApiKeyAuthOptions.SchemeName;
+        })
+        .AddScheme<ApiKeyAuthOptions, ApiKeyAuthHandler> (ApiKeyAuthOptions.SchemeName, null);
 
         services.AddHttpContextAccessor();
-        services.AddScoped<IUserContext, UserContext>();
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
-        services.AddSingleton<ITokenProvider, TokenProvider>();
 
+        services.AddScoped<IUserContext, UserContext>();
+        
+        services.AddSingleton<IPasswordHasher, PasswordHasher>(); //REMOVE 
+        services.AddSingleton<ITokenProvider, TokenProvider>(); //REMOVE
         return services;
     }
 
     private static IServiceCollection AddAuthorizationInternal(this IServiceCollection services)
     {
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.DefaultPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+        });
 
         services.AddScoped<PermissionProvider>();
 

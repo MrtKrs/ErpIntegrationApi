@@ -23,8 +23,8 @@ public class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Integratio
     [Fact]
     public async Task GetProductById_WhenProductExists_ShouldReturnProductData()
     {
+        //Arrange
         using var connection = _connectionFactory.CreateConnection();
-
         await connection.ExecuteAsync(@"
             IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='tblVarer' AND xtype='U')
                 CREATE TABLE [dbo].[tblVarer](
@@ -39,8 +39,11 @@ public class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Integratio
             "INSERT INTO tblVarer (id, varenummer, varenavn, standardpris) VALUES (@Id, @Sku, @Name, @Price)",
             testProduct);
 
-        HttpResponseMessage response = await HttpClient.GetAsync("products/101");
+        //Act
+        Authenticate("dev-secret-placeholder-key-123");
+        HttpResponseMessage response = await HttpClient.GetAsync($"products/{testProduct.Id}");
 
+        //Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         ProductResponse? result = await response.Content.ReadFromJsonAsync<ProductResponse>();
@@ -48,5 +51,18 @@ public class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Integratio
         Assert.Equal(testProduct.Name, result.Name);
         Assert.Equal(testProduct.Sku, result.Sku);
         Assert.Equal(testProduct.Price, result.Price);
-    }    
+    }
+
+    [Fact]
+    public async Task GetProductById_WhenNoApiKeyIsProvided_ShouldReturnUnauthorized()
+    {
+        //Arrange
+        int productId = 678;
+
+        //Act
+        HttpResponseMessage response = await HttpClient.GetAsync($"/products/{productId}");
+
+        //Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }
