@@ -15,6 +15,6 @@ public abstract class BaseIntegrationTest
 
     protected void Authenticate(string accessToken)
     {
-        HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Api-Key", accessToken);
     }
 }
