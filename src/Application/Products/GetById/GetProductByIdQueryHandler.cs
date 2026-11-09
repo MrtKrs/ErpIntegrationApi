@@ -21,7 +21,7 @@ internal sealed class GetProductByIdQueryHandler(IDbConnectionFactory connection
             varenavn AS Name,
             standardpris AS Price
         FROM tblVarer
-        WHERE Id = @ProductId";
+        WHERE Id = @ProductId;";
 
         ProductResponse? product = await connection.QuerySingleOrDefaultAsync<ProductResponse>(
             new CommandDefinition(sql, new { query.ProductId}, cancellationToken: cancellationToken));
