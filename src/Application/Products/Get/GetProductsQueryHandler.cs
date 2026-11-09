@@ -6,38 +6,51 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Application.Abstractions.Pagination;
 using Dapper;
+using Microsoft.Extensions.Logging;
 using SharedKernel;
 
 namespace Application.Products.Get;
 
-internal sealed class GetProductsQueryHandler(IDbConnectionFactory connectionFactory)
+internal sealed class GetProductsQueryHandler(IDbConnectionFactory connectionFactory )
     : IQueryHandler<GetProductsQuery, PagedList<ProductResponse>>
 {
     public async Task<Result<PagedList<ProductResponse>>> Handle(GetProductsQuery query, CancellationToken cancellationToken)
     {
         using var connection = connectionFactory.CreateConnection();
 
-        int offset = (query.Page -1) * query.PageSize;
-
-        //TODO: Search, SortColumns, SorOrder missing:
-        const string sql = @"
-        SELECT COUNT(*) FROM tblVarer;
-
+        //TODO: SortColumns, SorOrder missing:
+        string countSql = "SELECT COUNT (*) FROM tblVarer v WHERE 1=1";
+        string resultSql = @"
         SELECT
-            id AS Id,
-            varenummer AS Sku,
-            varenavn AS Name,
-            standardpris AS Price
-        FROM tblVarer
-        ORDER BY id ASC
-        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+            v.id AS Id,
+            v.varenummer AS Sku,
+            v.varenavn AS Name,
+            v.standardpris AS Price
+        FROM tblVarer v
+        WHERE 1=1
+        ";
 
+        var parameters = new DynamicParameters();
+        parameters.Add("Offset", (query.Page -1 ) * query.PageSize);
+        parameters.Add("PageSize", query.PageSize);
+
+        if(!string.IsNullOrWhiteSpace(query.Search))
+        {
+            string searchPattern = $"%{query.Search}%";
+            parameters.Add("SearchPattern", searchPattern);
+
+            string searchFilter = " AND ( v.varenavn LIKE @SearchPattern OR v.varenummer LIKE @SearchPattern )";
+            countSql += searchFilter;
+            resultSql += searchFilter;
+        }
+        resultSql += "\n ORDER BY v.id ASC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+        string sql = $"{countSql};\n{resultSql}";
+        
         using var multipleResults = await connection.QueryMultipleAsync(
-            new CommandDefinition( sql, new { 
-            Offset = offset,
-            query.PageSize},
+            new CommandDefinition( sql, 
+            parameters,
             cancellationToken : cancellationToken));
-        //new CommandDefinition(sql, new {query.Search, query.SortColumn, query.SortOrder, offset, query.PageSize},
 
         int totalCount = await multipleResults.ReadFirstAsync<int>();
         var products = (await multipleResults.ReadAsync<ProductResponse>()).ToList();

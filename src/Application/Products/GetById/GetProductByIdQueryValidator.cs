@@ -8,7 +8,6 @@ internal sealed class GetProductByIdQueryValidator : AbstractValidator<GetProduc
     public GetProductByIdQueryValidator()
     {
         RuleFor(c => c.ProductId)
-            .GreaterThan(0)
-            .WithMessage("The product ID must be greater than zero.");
+            .GreaterThan(0);
     }
 }
