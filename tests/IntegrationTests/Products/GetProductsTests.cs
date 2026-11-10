@@ -20,48 +20,30 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
     }
 
     [Fact]
-     public async Task GetProducts_ShouldReturnEmptyList()
+     public async Task GetProducts_ShouldReturnEmptyList_WhenNoSearchMatches()
     {
         using var connection = _connectionFactory.CreateConnection();
+        string searchTerm = $"{Guid.NewGuid():N}";
         Authenticate("dev-secret-placeholder-key-123");
-        HttpResponseMessage response = await HttpClient.GetAsync("products");
+        HttpResponseMessage response = await HttpClient.GetAsync(
+            $"products?page=1&pageSize=10&search={searchTerm}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        //PagedList<ProductResponse>
-        var result = await response.Content.ReadFromJsonAsync<PagedList<ProductResponse>>();
+        
+        var result = await response.Content.ReadFromJsonAsync<PagedList<Product>>();
         Assert.NotNull(result);
         Assert.Empty(result.Items);
     }
 
     [Fact]
-     public async Task GetProducts_ShouldReturnListOfOne()
-    {
-        using var connection = _connectionFactory.CreateConnection();
-
-        var testProduct = new { Id = 102, Sku = "PROD-102", Name = "Test Wrench", Price = "199.95 kr" };
-        await connection.ExecuteAsync(
-            "INSERT INTO tblVarer (id, varenummer, varenavn, standardpris) VALUES (@Id, @Sku, @Name, @Price)",
-            testProduct);
-
-        Authenticate("dev-secret-placeholder-key-123");
-        HttpResponseMessage response = await HttpClient.GetAsync("products");
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        //PagedList<ProductResponse>
-        var result = await response.Content.ReadFromJsonAsync<PagedList<ProductResponse>>();
-        Assert.NotNull(result);
-        Assert.Single(result.Items);
-    }
-
-    [Fact]
-    public async Task GetProducts_ShouldReturnFilteredResults_WhenSearchTermMatches()
+    public async Task GetProducts_ShouldReturnFilteredResults_WhenSearchMatches()
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.ExecuteAsync(@"
-            INSERT INTO tblVarer (id, varenummer, varenavn, standardpris) VALUES 
-            ('71', 'Industrial Widget A', 'WID-A', '99.99'),
-            ('72', 'Deluxe Sprocket B', 'SPR-B', '49.50'),
-            ('73', 'Gear Ind. C', 'GearIndust-C', '150.00');");
+            INSERT INTO tblVarer (varenummer, varenavn, standardpris) VALUES 
+            ('Industrial Widget A', 'WID-A', '99.99'),
+            ('Deluxe Sprocket B', 'SPR-B', '49.50'),
+            ('Gear Ind. C', 'GearIndust-C', '150.00');");
 
         string searchTerm = "Indust";
         Authenticate("dev-secret-placeholder-key-123");
@@ -87,10 +69,10 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
     {
         using var connection = _connectionFactory.CreateConnection();
         await connection.ExecuteAsync(@"
-            INSERT INTO tblVarer (id, varenummer, varenavn, standardpris) VALUES 
-            ('171', 'Prod 171', 'Sku171', '171'),
-            ('172', 'Prod 172', 'Sku172', '172'),
-            ('173', 'Prod 173', 'Sku173', '173');");
+            INSERT INTO tblVarer (varenummer, varenavn, standardpris) VALUES 
+            ('Prod 171', 'Sku171', '171'),
+            ('Prod 172', 'Sku172', '172'),
+            ('Prod 173', 'Sku173', '173');");
 
         int pageSize = 2;
         Authenticate("dev-secret-placeholder-key-123");

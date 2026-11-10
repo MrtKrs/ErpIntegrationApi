@@ -6,7 +6,7 @@ namespace IntegrationTests;
 [Collection(nameof(IntegrationTestCollection))]
 public abstract class BaseIntegrationTest
 {
-    protected BaseIntegrationTest(IntegrationTestWebAppFactory factory)
+     protected BaseIntegrationTest(IntegrationTestWebAppFactory factory)
     {
         HttpClient = factory.CreateClient();
     }

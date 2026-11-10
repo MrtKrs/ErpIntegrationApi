@@ -26,14 +26,15 @@ public class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Integratio
         //Arrange
         using var connection = _connectionFactory.CreateConnection();
 
-        var testProduct = new { Id = 101, Sku = "PROD-101", Name = "Test Screwdriver", Price = "99.95 kr" };
-        await connection.ExecuteAsync(
-            "INSERT INTO tblVarer (id, varenummer, varenavn, standardpris) VALUES (@Id, @Sku, @Name, @Price)",
+        var testProduct = new { Sku = "PROD-101", Name = "Test Screwdriver", Price = "99.95 kr" };
+        var id = await connection.QuerySingleAsync<int>(@"
+        INSERT INTO tblVarer (varenummer, varenavn, standardpris) VALUES (@Sku, @Name, @Price);
+                SELECT SCOPE_IDENTITY();", 
             testProduct);
 
         //Act
         Authenticate("dev-secret-placeholder-key-123");
-        HttpResponseMessage response = await HttpClient.GetAsync($"products/{testProduct.Id}");
+        HttpResponseMessage response = await HttpClient.GetAsync($"products/{id}");
 
         //Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -49,41 +50,11 @@ public class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Integratio
     public async Task GetProductById_WhenProductNotExists_ShouldReturnNotFound()
     {
         using var connection = _connectionFactory.CreateConnection();
+        var maxId = await connection.QuerySingleAsync<int>(@"
+        SELECT COALESCE(MAX(id), 0) FROM tblVarer
+        ");
         Authenticate("dev-secret-placeholder-key-123");
-        HttpResponseMessage response = await HttpClient.GetAsync($"products/70");
-
-        //Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetProductById_WhenProductNotExists_ShouldReturnNotFoundTwo()
-    {
-        using var connection = _connectionFactory.CreateConnection();
-        Authenticate("dev-secret-placeholder-key-123");
-        HttpResponseMessage response = await HttpClient.GetAsync($"products/72");
-
-        //Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetProductById_WhenProductNotExists_ShouldReturnNotFoundThree()
-    {
-        using var connection = _connectionFactory.CreateConnection();
-        Authenticate("dev-secret-placeholder-key-123");
-        HttpResponseMessage response = await HttpClient.GetAsync($"products/73");
-
-        //Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetProductById_WhenProductNotExists_ShouldReturnNotFoundFour()
-    {
-        using var connection = _connectionFactory.CreateConnection();
-        Authenticate("dev-secret-placeholder-key-123");
-        HttpResponseMessage response = await HttpClient.GetAsync($"products/171");
+        HttpResponseMessage response = await HttpClient.GetAsync($"products/{maxId+1000000}");
 
         //Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
