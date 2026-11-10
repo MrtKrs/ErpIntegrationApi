@@ -25,16 +25,8 @@ public class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Integratio
     {
         //Arrange
         using var connection = _connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(@"
-            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='tblVarer' AND xtype='U')
-                CREATE TABLE [dbo].[tblVarer](
-                [id] [int] NOT NULL,
-                [varenummer] [nvarchar](50) NULL,
-                [varenavn] [nvarchar](1000) NULL,
-                [standardpris] [nvarchar](50) NULL
-           );");
 
-           var testProduct = new { Id = 101, Sku = "PROD-101", Name = "Test Screwdriver", Price = "99.95 kr" };
+        var testProduct = new { Id = 101, Sku = "PROD-101", Name = "Test Screwdriver", Price = "99.95 kr" };
         await connection.ExecuteAsync(
             "INSERT INTO tblVarer (id, varenummer, varenavn, standardpris) VALUES (@Id, @Sku, @Name, @Price)",
             testProduct);
@@ -51,6 +43,50 @@ public class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Integratio
         Assert.Equal(testProduct.Name, result.Name);
         Assert.Equal(testProduct.Sku, result.Sku);
         Assert.Equal(testProduct.Price, result.Price);
+    }
+
+    [Fact]
+    public async Task GetProductById_WhenProductNotExists_ShouldReturnNotFound()
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        Authenticate("dev-secret-placeholder-key-123");
+        HttpResponseMessage response = await HttpClient.GetAsync($"products/70");
+
+        //Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProductById_WhenProductNotExists_ShouldReturnNotFoundTwo()
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        Authenticate("dev-secret-placeholder-key-123");
+        HttpResponseMessage response = await HttpClient.GetAsync($"products/72");
+
+        //Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProductById_WhenProductNotExists_ShouldReturnNotFoundThree()
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        Authenticate("dev-secret-placeholder-key-123");
+        HttpResponseMessage response = await HttpClient.GetAsync($"products/73");
+
+        //Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProductById_WhenProductNotExists_ShouldReturnNotFoundFour()
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        Authenticate("dev-secret-placeholder-key-123");
+        HttpResponseMessage response = await HttpClient.GetAsync($"products/171");
+
+        //Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
