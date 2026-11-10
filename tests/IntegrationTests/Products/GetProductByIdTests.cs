@@ -33,7 +33,7 @@ public class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Integratio
             testProduct);
 
         //Act
-        Authenticate("dev-secret-placeholder-key-123");
+        AuthenticateAsAdmin();
         HttpResponseMessage response = await HttpClient.GetAsync($"products/{id}");
 
         //Assert
@@ -47,13 +47,42 @@ public class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Integratio
     }
 
     [Fact]
+    public async Task GetProductById_ShouldReturnProductWithInventory()
+    {
+        using var connection = _connectionFactory.CreateConnection();
+
+        var testProduct = new { Sku = "Prod w Stock", Name = "Product with Stock", Price = "99.95 kr" };
+        var productId = await connection.QuerySingleAsync<int>(@"
+            INSERT INTO tblVarer (varenummer, varenavn, standardpris) VALUES (@Sku, @Name, @Price);
+            SELECT SCOPE_IDENTITY();", 
+            testProduct);
+        var testStock = new { ProductId = productId, UseInventory = true, @Stock = 67, @LowLimit = 10, @Reserved = 10, @Available = 57, @Ordered = 20};
+        await connection.ExecuteAsync(@"
+            INSERT INTO [dbo].[tblLager]
+                ([vareid],[benytlagerstyring],[beholdning],[lavgrænse],[reserveret],[disponibel],[bestilt])
+            VALUES
+                (@ProductId, @UseInventory, @Stock, @LowLimit, @Reserved, @Available, @Ordered);", 
+           testStock);
+
+        AuthenticateAsAdmin();
+
+        var response = await HttpClient.GetAsync($"products/{productId}");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var product = await response.Content.ReadFromJsonAsync<ProductResponse>();
+        Assert.NotNull(product);
+        Assert.Equal(testStock.Stock, product.StockQuantity);
+        Assert.Equal(testStock.Available, product.AvailableQuantity); 
+    }
+
+    [Fact]
     public async Task GetProductById_WhenProductNotExists_ShouldReturnNotFound()
     {
         using var connection = _connectionFactory.CreateConnection();
         var maxId = await connection.QuerySingleAsync<int>(@"
         SELECT COALESCE(MAX(id), 0) FROM tblVarer
         ");
-        Authenticate("dev-secret-placeholder-key-123");
+        AuthenticateAsAdmin();
         HttpResponseMessage response = await HttpClient.GetAsync($"products/{maxId+1000000}");
 
         //Assert

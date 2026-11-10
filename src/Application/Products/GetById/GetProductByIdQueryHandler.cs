@@ -16,15 +16,34 @@ internal sealed class GetProductByIdQueryHandler(IDbConnectionFactory connection
 
         const string sql = @"
         SELECT 
-            id AS Id,
-            varenummer AS Sku,
-            varenavn AS Name,
-            standardpris AS Price
-        FROM tblVarer
-        WHERE Id = @ProductId;";
+            v.id AS Id,
+            v.varenummer AS Sku,
+            v.varenavn AS Name,
+            v.standardpris AS Price,
+            l.id AS StockId,
+            l.beholdning AS StockQuantity,
+            l.disponibel AS AvailableQuantity
+        FROM tblVarer v
+        LEFT JOIN tblLager l ON v.id = l.vareid
+        WHERE v.id = @ProductId;";
 
-        ProductResponse? product = await connection.QuerySingleOrDefaultAsync<ProductResponse>(
-            new CommandDefinition(sql, new { query.ProductId}, cancellationToken: cancellationToken));
+        var products = await connection.QueryAsync<VareDto, LagerDto, ProductResponse> (
+            sql,
+            (vare, lager) =>
+            {
+                return new ProductResponse (
+                    vare.Id,
+                    vare.Sku ?? string.Empty,
+                    vare.Name ?? string.Empty,
+                    vare.Price ?? string.Empty,
+                    lager?.StockQuantity ?? 0,
+                    lager?.AvailableQuantity ?? 0
+                );
+            },
+            new { query.ProductId},
+            splitOn: "StockId"
+        );
+        var product = products.FirstOrDefault();
         
         if(product is null)
         {
@@ -33,4 +52,17 @@ internal sealed class GetProductByIdQueryHandler(IDbConnectionFactory connection
 
         return Result.Success(product);
     }
+
+    private sealed record VareDto( 
+        int Id,
+        string? Sku, 
+        string? Name, 
+        string? Price
+        );
+
+    private sealed record LagerDto(
+        int StockId,
+        int StockQuantity,
+        int AvailableQuantity
+    );
 }

@@ -13,7 +13,12 @@ public abstract class BaseIntegrationTest
 
     protected HttpClient HttpClient { get; }
 
-    protected void Authenticate(string accessToken)
+    protected void AuthenticateAsAdmin()
+    {
+        Authenticate("dev-secret-placeholder-key-123");
+    }
+    
+    private void Authenticate(string accessToken)
     {
         HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Api-Key", accessToken);
     }

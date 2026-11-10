@@ -4,5 +4,7 @@ public sealed record ProductResponse(
     int Id,
     string Sku,
     string Name,
-    string Price
+    string Price,
+    int StockQuantity,
+    int AvailableQuantity
     );

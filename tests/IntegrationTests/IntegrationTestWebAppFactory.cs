@@ -53,7 +53,21 @@ public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program
                     [varenavn] [nvarchar](1000) NULL,
                     [standardpris] [nvarchar](50) NULL
                 );
-            END";
+            END;
+            
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'tblLager' AND xtype='U')
+            BEGIN
+                CREATE Table [dbo].[tblLager](
+                    [id] [int] IDENTITY(1,1) NOT NULL,
+                    [vareid] [int] NULL,
+                    [benytlagerstyring] [bit] NULL,
+                    [beholdning] [int] NULL,
+                    [lavgrænse] [int] NULL,
+                    [reserveret] [int] NULL,
+                    [disponibel] [int] NULL,
+                    [bestilt] [int] NULL,
+                );
+            END;";
 
         await connection.ExecuteAsync(initializeSchemaSql);
     }
