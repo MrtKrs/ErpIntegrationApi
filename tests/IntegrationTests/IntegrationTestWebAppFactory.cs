@@ -48,7 +48,7 @@ public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program
             IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='tblVarer' AND xtype='U')
             BEGIN
                 CREATE TABLE [dbo].[tblVarer](
-                    [id] [int] NOT NULL,
+                    [id] [int] IDENTITY(1,1) NOT NULL,
                     [varenummer] [nvarchar](50) NULL,
                     [varenavn] [nvarchar](1000) NULL,
                     [standardpris] [nvarchar](50) NULL
