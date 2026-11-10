@@ -24,7 +24,7 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
     {
         using var connection = _connectionFactory.CreateConnection();
         string searchTerm = $"{Guid.NewGuid():N}";
-        Authenticate("dev-secret-placeholder-key-123");
+        AuthenticateAsAdmin();
         HttpResponseMessage response = await HttpClient.GetAsync(
             $"products?page=1&pageSize=10&search={searchTerm}");
 
@@ -46,7 +46,7 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
             ('Gear Ind. C', 'GearIndust-C', '150.00');");
 
         string searchTerm = "Indust";
-        Authenticate("dev-secret-placeholder-key-123");
+        AuthenticateAsAdmin();
         HttpResponseMessage response = await HttpClient.GetAsync(
             $"products?page=1&pageSize=10&search={searchTerm}");
 
@@ -75,7 +75,7 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
             ('Prod 173', 'Sku173', '173');");
 
         int pageSize = 2;
-        Authenticate("dev-secret-placeholder-key-123");
+        AuthenticateAsAdmin();
         HttpResponseMessage response = await HttpClient.GetAsync($"products?page=1&pageSize={pageSize}");
         
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
