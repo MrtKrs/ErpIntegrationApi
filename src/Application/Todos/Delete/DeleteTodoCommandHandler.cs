@@ -1,41 +1,41 @@
-﻿using Application.Abstractions.Authentication;
-using Application.Abstractions.Data;
-using Application.Abstractions.Messaging;
-using Domain.Todos;
-using Dapper;
-using Microsoft.Extensions.Caching.Hybrid;
-using SharedKernel;
+﻿// using Application.Abstractions.Authentication;
+// using Application.Abstractions.Data;
+// using Application.Abstractions.Messaging;
+// using Domain.Todos;
+// using Dapper;
+// using Microsoft.Extensions.Caching.Hybrid;
+// using SharedKernel;
 
-namespace Application.Todos.Delete;
+// namespace Application.Todos.Delete;
 
-internal sealed class DeleteTodoCommandHandler(
-    IDbConnectionFactory connectionFactory,
-    IUserContext userContext,
-    HybridCache cache)
-    : ICommandHandler<DeleteTodoCommand>
-{
-    public async Task<Result> Handle(DeleteTodoCommand command, CancellationToken cancellationToken)
-    {
-        _ = connectionFactory;
-        _ = cache;
-        _ = userContext;
-        throw new NotImplementedException();
-        // TodoItem? todoItem = await context.TodoItems
-        //     .SingleOrDefaultAsync(t => t.Id == command.TodoItemId && t.UserId == userContext.UserId, cancellationToken);
+// internal sealed class DeleteTodoCommandHandler(
+//     IDbConnectionFactory connectionFactory,
+//     IUserContext userContext,
+//     HybridCache cache)
+//     : ICommandHandler<DeleteTodoCommand>
+// {
+//     public async Task<Result> Handle(DeleteTodoCommand command, CancellationToken cancellationToken)
+//     {
+//         _ = connectionFactory;
+//         _ = cache;
+//         _ = userContext;
+//         throw new NotImplementedException();
+//         TodoItem? todoItem = await context.TodoItems
+//             .SingleOrDefaultAsync(t => t.Id == command.TodoItemId && t.UserId == userContext.UserId, cancellationToken);
 
-        // if (todoItem is null)
-        // {
-        //     return Result.Failure(TodoItemErrors.NotFound(command.TodoItemId));
-        // }
+//         if (todoItem is null)
+//         {
+//             return Result.Failure(TodoItemErrors.NotFound(command.TodoItemId));
+//         }
 
-        // context.TodoItems.Remove(todoItem);
+//         context.TodoItems.Remove(todoItem);
 
-        // todoItem.Raise(new TodoItemDeletedDomainEvent(todoItem.Id));
+//         todoItem.Raise(new TodoItemDeletedDomainEvent(todoItem.Id));
 
-        // await context.SaveChangesAsync(cancellationToken);
+//         await context.SaveChangesAsync(cancellationToken);
 
-        // await cache.RemoveAsync(TodoCacheKeys.ById(todoItem.UserId, todoItem.Id), cancellationToken);
+//         await cache.RemoveAsync(TodoCacheKeys.ById(todoItem.UserId, todoItem.Id), cancellationToken);
 
-        // return Result.Success();
-    }
-}
+//         return Result.Success();
+//     }
+// }

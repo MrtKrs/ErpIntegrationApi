@@ -11,9 +11,9 @@ A pragmatic Clean Architecture starter for **.NET 10**. Batteries included, opin
   - Example use cases (Todos and Users)
   - Cross-cutting concerns (logging, validation) implemented as decorators
 - **Infrastructure** layer with:
-  - JWT authentication with **refresh tokens** (with token rotation)
+  - JWT authentication with **refresh tokens** (with token rotation) -- removed / unused
   - Permission-based authorization
-  - EF Core + PostgreSQL (snake_case naming, migrations)
+  - EF Core + PostgreSQL (snake_case naming, migrations) -- EF Core removed, replaced with Dapper. PostgreSQL only used for OpenTelemetry.
   - **HybridCache** for fast, unified caching with cache invalidation
   - Serilog structured logging
 - **Web.Api** layer with:
@@ -21,7 +21,7 @@ A pragmatic Clean Architecture starter for **.NET 10**. Batteries included, opin
   - **Rate limiting** (configurable global + authentication policies)
   - **OpenTelemetry** tracing and metrics (ASP.NET Core, HTTP, Npgsql, runtime)
   - Global exception handling and `ProblemDetails`
-  - Scalar API reference (OpenAPI) with JWT support
+  - Scalar API reference (OpenAPI) with JWT support -- JWT Removed?
 - **Grafana + Loki + Tempo + Prometheus** for logs, traces, and metrics, via the
   bundled `grafana/otel-lgtm` image (the app ships telemetry over OTLP)
   - Grafana is available at http://localhost:3000 by default
