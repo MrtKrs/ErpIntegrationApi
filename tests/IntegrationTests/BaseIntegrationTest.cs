@@ -1,17 +1,20 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Application.Abstractions.Data;
 
 namespace IntegrationTests;
 
 [Collection(nameof(IntegrationTestCollection))]
 public abstract class BaseIntegrationTest
 {
-     protected BaseIntegrationTest(IntegrationTestWebAppFactory factory)
+    protected IDbConnectionFactory ConnectionFactory { get; }
+    protected HttpClient HttpClient { get; }
+    
+    protected BaseIntegrationTest(IntegrationTestWebAppFactory factory)
     {
         HttpClient = factory.CreateClient();
+        ConnectionFactory = (IDbConnectionFactory)factory.Services.GetService(typeof(IDbConnectionFactory))!;
     }
-
-    protected HttpClient HttpClient { get; }
 
     protected void AuthenticateAsAdmin()
     {

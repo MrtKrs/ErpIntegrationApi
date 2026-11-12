@@ -7,22 +7,22 @@ using Infrastructure.Database;
 using Dapper;
 using Domain.Products;
 using System.Diagnostics.Contracts;
+using IntegrationTests.Common.Seeders;
 
 namespace IntegrationTests.Products;
 
 public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTestCollection>
 {
-    private readonly IDbConnectionFactory _connectionFactory;
+    private readonly ProductSeeder _productSeeder;
     
     public GetProductsTests (IntegrationTestWebAppFactory factory) : base(factory)
     {
-        _connectionFactory = (IDbConnectionFactory)factory.Services.GetService(typeof(IDbConnectionFactory))!;
+        _productSeeder = new ProductSeeder(ConnectionFactory);
     }
 
     [Fact]
      public async Task GetProducts_ShouldReturnEmptyList_WhenNoSearchMatches()
     {
-        using var connection = _connectionFactory.CreateConnection();
         string searchTerm = $"{Guid.NewGuid():N}";
         AuthenticateAsAdmin();
         HttpResponseMessage response = await HttpClient.GetAsync(
@@ -38,14 +38,27 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
     [Fact]
     public async Task GetProducts_ShouldReturnFilteredResults_WhenSearchMatches()
     {
-        using var connection = _connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(@"
-            INSERT INTO tblVarer (varenummer, varenavn, standardpris) VALUES 
-            ('Industrial Widget A', 'WID-A', '99.99'),
-            ('Deluxe Sprocket B', 'SPR-B', '49.50'),
-            ('Gear Ind. C', 'GearIndust-C', '150.00');");
+        string scope = Guid.NewGuid().ToString("N")[..8];
 
-        string searchTerm = "Indust";
+        // Match 1: Matches via Name ('varenavn')
+        SeededProduct widget = await _productSeeder.SeedProductAsync(
+            sku: $"Sku1-{scope}",
+            name: $"Widget Industrial-{scope}",
+            price: "99.99");
+
+        // Non-match: Should be excluded by the search filter
+        await _productSeeder.SeedProductAsync(
+            sku: $"Sku2-{scope}",
+            name: $"Sprocket {scope}",
+            price: "49.50");
+
+        // Match 2: Matches via SKU ('varenummer')
+        SeededProduct gear = await _productSeeder.SeedProductAsync(
+            sku: $"Sku3-Industrial-{scope}",
+            name: $"Gear {scope}",
+            price: "150.00");
+        
+        string searchTerm = $"Industrial-{scope}";
         AuthenticateAsAdmin();
         HttpResponseMessage response = await HttpClient.GetAsync(
             $"products?page=1&pageSize=10&search={searchTerm}");
@@ -55,28 +68,24 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
         var result = await response.Content.ReadFromJsonAsync<PagedList<Product>>();
         Assert.NotNull(result);
         Assert.Equal(2, result.Items.Count);
-        Assert.All(result.Items, item=>
-        {
-            bool containsInName = item.Name != null && item.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
-            bool containsInSku = item.Sku != null && item.Sku.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
-
-            Assert.True(containsInName || containsInSku);
-        });
+        Assert.Contains(result.Items, p => p.Id == widget.Id);
+        Assert.Contains(result.Items, p => p.Id == gear.Id);
     }
 
     [Fact]
     public async Task GetProducts_ShouldEnforcePagination_WhenPageSizeIsSpecified()
     {
-        using var connection = _connectionFactory.CreateConnection();
-        await connection.ExecuteAsync(@"
-            INSERT INTO tblVarer (varenummer, varenavn, standardpris) VALUES 
-            ('Prod 171', 'Sku171', '171'),
-            ('Prod 172', 'Sku172', '172'),
-            ('Prod 173', 'Sku173', '173');");
+        string scope = Guid.NewGuid().ToString("N")[..8];
+
+        for(int i = 1; i<=3; i++) 
+        {
+            await _productSeeder.SeedProductAsync(sku: $"Sku{i}-{scope}");
+        }
 
         int pageSize = 2;
         AuthenticateAsAdmin();
-        HttpResponseMessage response = await HttpClient.GetAsync($"products?page=1&pageSize={pageSize}");
+            HttpResponseMessage response = await HttpClient.GetAsync(
+        $"products?page=1&pageSize={pageSize}&search={scope}");
         
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
