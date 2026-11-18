@@ -26,10 +26,7 @@ public sealed class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Int
     public async Task WhenProductExists_ShouldReturnProductData()
     {
         //Arrange
-        var seededProduct = await _productDbHelper.SeedProductAsync(
-            sku: "PROD-101",
-            name : "Test Screwdriver",
-            price : "99.95 kr");
+        var seededProduct = await _productDbHelper.SeedProductAsync();
 
         //Act
         AuthenticateAsAdmin();

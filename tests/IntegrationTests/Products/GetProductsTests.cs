@@ -38,36 +38,29 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
     [Fact]
     public async Task GetProducts_ShouldReturnFilteredResults_WhenSearchMatches()
     {
-        string scope = Guid.NewGuid().ToString("N")[..8];
+        string searchTerm = $"Industrial-{Guid.NewGuid().ToString("N")[..8]}";
 
         // Match 1: Matches via Name ('varenavn')
         TestProduct widget = await _productDbHelper.SeedProductAsync(
-            sku: $"Sku1-{scope}",
-            name: $"Widget Industrial-{scope}",
-            price: "99.99");
+            name: $"Widget {searchTerm}");
 
-        // Non-match: Should be excluded by the search filter
-        await _productDbHelper.SeedProductAsync(
-            sku: $"Sku2-{scope}",
-            name: $"Sprocket {scope}",
-            price: "49.50");
+        // Non-match: Default Bogus data won't contain searchTerm
+        await _productDbHelper.SeedProductAsync();
 
         // Match 2: Matches via SKU ('varenummer')
         TestProduct gear = await _productDbHelper.SeedProductAsync(
-            sku: $"Sku3-Industrial-{scope}",
-            name: $"Gear {scope}",
-            price: "150.00");
+            sku: $"Sku-{searchTerm}");
         
-        string searchTerm = $"Industrial-{scope}";
         AuthenticateAsAdmin();
         HttpResponseMessage response = await HttpClient.GetAsync(
-            $"products?page=1&pageSize=10&search={searchTerm}");
+            $"products?page=1&pageSize=10&search={Uri.EscapeDataString(searchTerm)}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         
-        var result = await response.Content.ReadFromJsonAsync<PagedList<Product>>();
+        var result = await response.Content.ReadFromJsonAsync<PagedList<ProductResponse>>();
         Assert.NotNull(result);
         Assert.Equal(2, result.Items.Count);
+        Assert.Equal(2, result.TotalCount);
         Assert.Contains(result.Items, p => p.Id == widget.Id);
         Assert.Contains(result.Items, p => p.Id == gear.Id);
     }
@@ -76,13 +69,14 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
     public async Task GetProducts_ShouldEnforcePagination_WhenPageSizeIsSpecified()
     {
         string scope = Guid.NewGuid().ToString("N")[..8];
+        const int seededCount = 3;
+        const int pageSize = 2;
 
-        for(int i = 1; i<=3; i++) 
+        for(int i = 1; i<=seededCount; i++) 
         {
             await _productDbHelper.SeedProductAsync(sku: $"Sku{i}-{scope}");
         }
 
-        int pageSize = 2;
         AuthenticateAsAdmin();
             HttpResponseMessage response = await HttpClient.GetAsync(
         $"products?page=1&pageSize={pageSize}&search={scope}");
@@ -92,6 +86,8 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
         var result = await response.Content.ReadFromJsonAsync<PagedList<ProductResponse>>();
         Assert.NotNull(result);
         Assert.Equal(pageSize, result.Items.Count);
+        Assert.Equal(seededCount, result.TotalCount);
         Assert.True(result.HasNextPage);
+        Assert.False(result.HasPreviousPage);
     }
 }
