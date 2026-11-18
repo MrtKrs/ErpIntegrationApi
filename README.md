@@ -1,5 +1,5 @@
-# Clean Architecture
-Based on Milan Jovanović's template:
+# GoErpApi based on Clean Architecture template
+Milan Jovanović's template:
 https://milanjovanovic.tech/templates/clean-architecture
 
 ## What's left from the template?
