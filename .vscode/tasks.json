@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/CleanArchitecture.slnx",
+                "${workspaceFolder}/GoErpApi.slnx",
                 "--tl:on",
                 "/property:GenerateFullPaths=true"
             ],

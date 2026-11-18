@@ -5,10 +5,8 @@ using Application.Abstractions.Notifications;
 using Infrastructure.Authentication;
 using Infrastructure.Authorization;
 using Infrastructure.Database;
-//using Infrastructure.DomainEvents;
 using Infrastructure.Notifications;
 using Infrastructure.Time;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,8 +31,6 @@ public static class DependencyInjection
     {
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
 
-        //services.AddTransient<IDomainEventsDispatcher, DomainEventsDispatcher>();
-
         services.AddScoped<IEmailSender, LoggingEmailSender>();
 
 #pragma warning disable EXTEXP0018 // HybridCache is released; the API is stable in .NET 10.
@@ -49,23 +45,14 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("Database") 
             ?? throw new InvalidOperationException("Connection string 'Database' not found.");
 
-
-        // services.AddDbContext<ApplicationDbContext>(
-        //     options => options
-        //         .UseNpgsql(connectionString, npgsqlOptions =>
-        //             npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Default))
-        //         .UseSnakeCaseNamingConvention());
-
-        // services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddSingleton<IDbConnectionFactory>(new DbConnectionFactory( connectionString));
-            //configuration.GetConnectionString("Database")?? throw new InvalidOperationException("Connection string 'Database' not found.")));
 
         return services;
     }
 
     private static IServiceCollection AddHealthChecks(this IServiceCollection services, IConfiguration configuration)
     {
-        // TODO:
+        // TODO: Configuration?
         _ = configuration;
         services.AddHealthChecks();
 
@@ -87,10 +74,6 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
 
-        services.AddScoped<IUserContext, UserContext>();
-        
-        services.AddSingleton<IPasswordHasher, PasswordHasher>(); //REMOVE 
-        services.AddSingleton<ITokenProvider, TokenProvider>(); //REMOVE
         return services;
     }
 
@@ -103,10 +86,7 @@ public static class DependencyInjection
                 .Build();
         });
 
-        services.AddScoped<PermissionProvider>();
-
         services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
-
         services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
 
         return services;

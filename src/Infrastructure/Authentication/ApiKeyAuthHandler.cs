@@ -33,7 +33,6 @@ public class ApiKeyAuthHandler : AuthenticationHandler<ApiKeyAuthOptions>
 
         if(!Request.Headers.TryGetValue("Authorization", out var authorizationHeader))
         {
-            //return Task.FromResult(AuthenticateResult.NoResult()); 
             return AuthenticateResult.NoResult();
         }
 
@@ -42,7 +41,6 @@ public class ApiKeyAuthHandler : AuthenticationHandler<ApiKeyAuthOptions>
         if (!authHeaderValue.StartsWith("Api-Key ", StringComparison.OrdinalIgnoreCase))
         {
             return AuthenticateResult.Fail($"Invalid authorization scheme. Expected 'Api-Key <key>'.");
-            //return Task.FromResult(AuthenticateResult.Fail("Invalid authorization scheme. Expected 'Api-Key <key>'."));
         }
 
         string extractedKey = authHeaderValue.Substring("Api-Key ".Length).Trim();
