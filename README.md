@@ -5,14 +5,14 @@ https://milanjovanovic.tech/templates/clean-architecture
 ## What's left from the template?
 
 - **SharedKernel** project with common Domain-Driven Design abstractions.
-- **Domain** layer with sample entities *domain events removed*. [^1]
+- **Domain** layer with product entity *domain events removed*. [^1]
 - **Application** layer with abstractions for:
   - CQRS (lightweight, MediatR-free command/query handlers)
   - Cross-cutting concerns (logging, validation) implemented as decorators
 - **Infrastructure** layer with:
   - Permission-based authorization
-  - *User login and JWT tokens replaced* with Api-Key.
-  - *EF Core removed*, replaced with Dapper. *PostgreSQL* only used for OpenTelemetry.
+  - *User login and JWT tokens replaced with Api-Key*.
+  - *EF Core removed, replaced with Dapper*. PostgreSQL only used for OpenTelemetry.
   - *HybridCache unused* for fast, unified caching with cache invalidation. [^1]
   - Serilog structured logging
 - **Web.Api** layer with:
