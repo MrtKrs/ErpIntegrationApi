@@ -7,26 +7,26 @@ using Application.Abstractions.Data;
 using Application.Products.GetById;
 using Dapper;
 using Domain.Products;
-using IntegrationTests.Common.Seeders;
+using IntegrationTests.Common.Database;
 
 namespace IntegrationTests.Products;
 
 public sealed class GetProductByIdTests : BaseIntegrationTest, IClassFixture<IntegrationTestCollection>
 {
-    private readonly ProductSeeder _productSeeder;
-    private readonly InventorySeeder _inventorySeeder;
+    private readonly ProductDbHelper _productDbHelper;
+    private readonly InventoryDbHelper _inventoryDbHelper;
 
     public GetProductByIdTests(IntegrationTestWebAppFactory factory) : base(factory)
     {
-        _productSeeder = new ProductSeeder(ConnectionFactory);
-        _inventorySeeder = new InventorySeeder(ConnectionFactory);
+        _productDbHelper = new ProductDbHelper(ConnectionFactory);
+        _inventoryDbHelper = new InventoryDbHelper(ConnectionFactory);
     }
 
     [Fact]
     public async Task WhenProductExists_ShouldReturnProductData()
     {
         //Arrange
-        var seededProduct = await _productSeeder.SeedProductAsync(
+        var seededProduct = await _productDbHelper.SeedProductAsync(
             sku: "PROD-101",
             name : "Test Screwdriver",
             price : "99.95 kr");
@@ -48,9 +48,9 @@ public sealed class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Int
     [Fact]
     public async Task WhenProductExists_ShouldReturnProductWithInventory()
     {
-        var seededProduct = await _productSeeder.SeedProductAsync();
+        var seededProduct = await _productDbHelper.SeedProductAsync();
 
-        var seededInventory = await _inventorySeeder.SeedInventoryAsync(productId: seededProduct.Id, stock: 67, available: 57);
+        var seededInventory = await _inventoryDbHelper.SeedInventoryAsync(productId: seededProduct.Id, stock: 67, available: 57);
 
         AuthenticateAsAdmin();
         var response = await HttpClient.GetAsync($"products/{seededProduct.Id}");
@@ -66,16 +66,15 @@ public sealed class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Int
     [Fact]
     public async Task WhenProductNotExists_ShouldReturnNotFound()
     {
-        using var connection = ConnectionFactory.CreateConnection();
-        var maxId = await connection.QuerySingleAsync<int>(@"
-        SELECT COALESCE(MAX(id), 0) FROM tblVarer
-        ");
+        var maxId = await _productDbHelper.GetMaxId();
         AuthenticateAsAdmin();
-        HttpResponseMessage response = await HttpClient.GetAsync($"products/{maxId+1000000}");
 
-        //Assert
+        HttpResponseMessage response = await HttpClient.GetAsync($"products/{maxId + 1000000}");
+
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    
 
     [Fact]
     public async Task WhenNoApiKeyIsProvided_ShouldReturnUnauthorized()

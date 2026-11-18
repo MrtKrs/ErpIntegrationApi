@@ -1,9 +1,9 @@
 using Application.Abstractions.Data;
 using Dapper;
 
-namespace IntegrationTests.Common.Seeders;
+namespace IntegrationTests.Common.Database;
 
-public sealed record SeededInventory(
+public sealed record TestInventory(
     int ProductId,
     bool? UseInventory,
     int? Stock,
@@ -12,9 +12,9 @@ public sealed record SeededInventory(
     int? Available,
     int? Ordered);
 
-public sealed class InventorySeeder(IDbConnectionFactory connectionFactory)
+public sealed class InventoryDbHelper(IDbConnectionFactory connectionFactory)
 {
-    public async Task<SeededInventory> SeedInventoryAsync(
+    public async Task<TestInventory> SeedInventoryAsync(
         int productId, 
         bool? useInventory = true,
         int? stock = 10,
@@ -23,7 +23,7 @@ public sealed class InventorySeeder(IDbConnectionFactory connectionFactory)
         int? available = 10,
         int? ordered = 0)
     {
-        var inventory = new SeededInventory(
+        var inventory = new TestInventory(
             productId,
             useInventory,
             stock,

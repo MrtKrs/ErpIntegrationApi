@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Application.Products.Update;
 
-public class UpdateProductsCommandValidator :AbstractValidator<UpdateProductCommand>
+public class UpdateProductCommandValidator :AbstractValidator<UpdateProductCommand>
 {
     // Matches: "0", "1250", "0,00", "149,50", "1.250,00", "0,00 kr.", "149,50 kr"
     private static readonly Regex LegacyDanishPriceRegex = new (
@@ -11,7 +11,7 @@ public class UpdateProductsCommandValidator :AbstractValidator<UpdateProductComm
         RegexOptions.Compiled | RegexOptions.IgnoreCase,
         TimeSpan.FromMilliseconds(100) );
 
-    public UpdateProductsCommandValidator()
+    public UpdateProductCommandValidator()
     {
         RuleFor(c => c.Id).GreaterThan(0);
         RuleFor(c => c.Sku).NotEmpty().MinimumLength(3).MaximumLength(50);

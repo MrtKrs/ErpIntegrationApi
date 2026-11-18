@@ -8,7 +8,7 @@ namespace  Application.UnitTests.Products;
 public sealed class ProductValidatorTests
 {
     private readonly GetProductsQueryValidator _getValidator = new();
-    private readonly UpdateProductsCommandValidator _updateValidator = new();
+    private readonly UpdateProductCommandValidator _updateValidator = new();
 
     [Fact]
     public void GetValidator_Should_HaveError_WhenPageIsZeroOrNegative()

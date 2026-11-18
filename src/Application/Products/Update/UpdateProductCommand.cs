@@ -1,3 +1,5 @@
+using Application.Abstractions.Messaging;
+
 namespace Application.Products.Update;
 
 public sealed record UpdateProductCommand(
@@ -5,4 +7,4 @@ public sealed record UpdateProductCommand(
     string Sku,
     string Name,
     string Price
-);
+    ) : ICommand;

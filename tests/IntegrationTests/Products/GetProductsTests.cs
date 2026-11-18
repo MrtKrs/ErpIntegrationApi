@@ -7,17 +7,17 @@ using Infrastructure.Database;
 using Dapper;
 using Domain.Products;
 using System.Diagnostics.Contracts;
-using IntegrationTests.Common.Seeders;
+using IntegrationTests.Common.Database;
 
 namespace IntegrationTests.Products;
 
 public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTestCollection>
 {
-    private readonly ProductSeeder _productSeeder;
+    private readonly ProductDbHelper _productDbHelper;
     
     public GetProductsTests (IntegrationTestWebAppFactory factory) : base(factory)
     {
-        _productSeeder = new ProductSeeder(ConnectionFactory);
+        _productDbHelper = new ProductDbHelper(ConnectionFactory);
     }
 
     [Fact]
@@ -41,19 +41,19 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
         string scope = Guid.NewGuid().ToString("N")[..8];
 
         // Match 1: Matches via Name ('varenavn')
-        SeededProduct widget = await _productSeeder.SeedProductAsync(
+        TestProduct widget = await _productDbHelper.SeedProductAsync(
             sku: $"Sku1-{scope}",
             name: $"Widget Industrial-{scope}",
             price: "99.99");
 
         // Non-match: Should be excluded by the search filter
-        await _productSeeder.SeedProductAsync(
+        await _productDbHelper.SeedProductAsync(
             sku: $"Sku2-{scope}",
             name: $"Sprocket {scope}",
             price: "49.50");
 
         // Match 2: Matches via SKU ('varenummer')
-        SeededProduct gear = await _productSeeder.SeedProductAsync(
+        TestProduct gear = await _productDbHelper.SeedProductAsync(
             sku: $"Sku3-Industrial-{scope}",
             name: $"Gear {scope}",
             price: "150.00");
@@ -79,7 +79,7 @@ public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTe
 
         for(int i = 1; i<=3; i++) 
         {
-            await _productSeeder.SeedProductAsync(sku: $"Sku{i}-{scope}");
+            await _productDbHelper.SeedProductAsync(sku: $"Sku{i}-{scope}");
         }
 
         int pageSize = 2;
