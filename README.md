@@ -11,7 +11,7 @@ https://milanjovanovic.tech/templates/clean-architecture
   - Cross-cutting concerns (logging, validation) implemented as decorators
 - **Infrastructure** layer with:
   - Permission-based authorization
-  - User login and JWT tokens replaced with Api-Key.
+  - *User login and JWT tokens replaced* with Api-Key.
   - *EF Core removed*, replaced with Dapper. *PostgreSQL* only used for OpenTelemetry.
   - *HybridCache unused* for fast, unified caching with cache invalidation. [^1]
   - Serilog structured logging
