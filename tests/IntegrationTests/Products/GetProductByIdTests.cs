@@ -7,90 +7,74 @@ using Application.Abstractions.Data;
 using Application.Products.GetById;
 using Dapper;
 using Domain.Products;
-using Xunit;
+using IntegrationTests.Common.Database;
 
 namespace IntegrationTests.Products;
 
-public class GetProductByIdTests : BaseIntegrationTest, IClassFixture<IntegrationTestCollection>
+public sealed class GetProductByIdTests : BaseIntegrationTest, IClassFixture<IntegrationTestCollection>
 {
-    private readonly IDbConnectionFactory _connectionFactory;
+    private readonly ProductDbHelper _productDbHelper;
+    private readonly InventoryDbHelper _inventoryDbHelper;
 
     public GetProductByIdTests(IntegrationTestWebAppFactory factory) : base(factory)
     {
-        _connectionFactory = (IDbConnectionFactory)factory.Services.GetService(typeof(IDbConnectionFactory))!;
+        _productDbHelper = new ProductDbHelper(ConnectionFactory);
+        _inventoryDbHelper = new InventoryDbHelper(ConnectionFactory);
     }
 
     [Fact]
-    public async Task GetProductById_WhenProductExists_ShouldReturnProductData()
+    public async Task WhenProductExists_ShouldReturnProductData()
     {
         //Arrange
-        using var connection = _connectionFactory.CreateConnection();
-
-        var testProduct = new { Sku = "PROD-101", Name = "Test Screwdriver", Price = "99.95 kr" };
-        var id = await connection.QuerySingleAsync<int>(@"
-        INSERT INTO tblVarer (varenummer, varenavn, standardpris) VALUES (@Sku, @Name, @Price);
-                SELECT SCOPE_IDENTITY();", 
-            testProduct);
+        var seededProduct = await _productDbHelper.SeedProductAsync();
 
         //Act
         AuthenticateAsAdmin();
-        HttpResponseMessage response = await HttpClient.GetAsync($"products/{id}");
+        HttpResponseMessage response = await HttpClient.GetAsync($"products/{seededProduct.Id}");
 
         //Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
         ProductResponse? result = await response.Content.ReadFromJsonAsync<ProductResponse>();
         Assert.NotNull(result);
-        Assert.Equal(testProduct.Name, result.Name);
-        Assert.Equal(testProduct.Sku, result.Sku);
-        Assert.Equal(testProduct.Price, result.Price);
+        Assert.Equal(seededProduct.Id, result.Id);
+        Assert.Equal(seededProduct.Sku, result.Sku);
+        Assert.Equal(seededProduct.Name, result.Name);
+        Assert.Equal(seededProduct.Price, result.Price);
     }
 
     [Fact]
-    public async Task GetProductById_ShouldReturnProductWithInventory()
+    public async Task WhenProductExists_ShouldReturnProductWithInventory()
     {
-        using var connection = _connectionFactory.CreateConnection();
+        var seededProduct = await _productDbHelper.SeedProductAsync();
 
-        var testProduct = new { Sku = "Prod w Stock", Name = "Product with Stock", Price = "99.95 kr" };
-        var productId = await connection.QuerySingleAsync<int>(@"
-            INSERT INTO tblVarer (varenummer, varenavn, standardpris) VALUES (@Sku, @Name, @Price);
-            SELECT SCOPE_IDENTITY();", 
-            testProduct);
-        var testStock = new { ProductId = productId, UseInventory = true, @Stock = 67, @LowLimit = 10, @Reserved = 10, @Available = 57, @Ordered = 20};
-        await connection.ExecuteAsync(@"
-            INSERT INTO [dbo].[tblLager]
-                ([vareid],[benytlagerstyring],[beholdning],[lavgrænse],[reserveret],[disponibel],[bestilt])
-            VALUES
-                (@ProductId, @UseInventory, @Stock, @LowLimit, @Reserved, @Available, @Ordered);", 
-           testStock);
+        var seededInventory = await _inventoryDbHelper.SeedInventoryAsync(productId: seededProduct.Id, stock: 67, available: 57);
 
         AuthenticateAsAdmin();
-
-        var response = await HttpClient.GetAsync($"products/{productId}");
+        var response = await HttpClient.GetAsync($"products/{seededProduct.Id}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var product = await response.Content.ReadFromJsonAsync<ProductResponse>();
         Assert.NotNull(product);
-        Assert.Equal(testStock.Stock, product.StockQuantity);
-        Assert.Equal(testStock.Available, product.AvailableQuantity); 
+        Assert.Equal(seededProduct.Id, product.Id);
+        Assert.Equal(seededInventory.Stock, product.StockQuantity);
+        Assert.Equal(seededInventory.Available, product.AvailableQuantity); 
     }
 
     [Fact]
-    public async Task GetProductById_WhenProductNotExists_ShouldReturnNotFound()
+    public async Task WhenProductNotExists_ShouldReturnNotFound()
     {
-        using var connection = _connectionFactory.CreateConnection();
-        var maxId = await connection.QuerySingleAsync<int>(@"
-        SELECT COALESCE(MAX(id), 0) FROM tblVarer
-        ");
+        var maxId = await _productDbHelper.GetMaxId();
         AuthenticateAsAdmin();
-        HttpResponseMessage response = await HttpClient.GetAsync($"products/{maxId+1000000}");
 
-        //Assert
+        HttpResponseMessage response = await HttpClient.GetAsync($"products/{maxId + 1000000}");
+
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    
+
     [Fact]
-    public async Task GetProductById_WhenNoApiKeyIsProvided_ShouldReturnUnauthorized()
+    public async Task WhenNoApiKeyIsProvided_ShouldReturnUnauthorized()
     {
         //Arrange
         int productId = 678;
