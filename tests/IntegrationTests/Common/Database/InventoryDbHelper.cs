@@ -32,7 +32,7 @@ public sealed class InventoryDbHelper(IDbConnectionFactory connectionFactory)
             available,
             ordered);
 
-        using var connection = connectionFactory.CreateConnection();
+        using var connection = connectionFactory.CreateErpConnection();
         await connection.ExecuteAsync(@"
             INSERT INTO [dbo].[tblLager]
                 ([vareid],[benytlagerstyring],[beholdning],[lavgrænse],[reserveret],[disponibel],[bestilt])

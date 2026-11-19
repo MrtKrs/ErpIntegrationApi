@@ -11,7 +11,7 @@ using IntegrationTests.Common.Database;
 
 namespace IntegrationTests.Products;
 
-public class GetProductsTests : BaseIntegrationTest, IClassFixture<IntegrationTestCollection>
+public class GetProductsTests : BaseIntegrationTest
 {
     private readonly ProductDbHelper _productDbHelper;
     

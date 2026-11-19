@@ -24,7 +24,7 @@ internal sealed class Update : IEndpoint
             return result.Match(Results.NoContent, CustomResults.Problem);
         })
         .WithTags(Tags.Products)
-        .HasPermission("products:read")
+        .HasPermission("products:write")
         .RequireAuthorization();
     }
 }

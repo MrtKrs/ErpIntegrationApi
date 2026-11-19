@@ -16,7 +16,7 @@ internal sealed class GetProductsQueryHandler(IDbConnectionFactory connectionFac
 {
     public async Task<Result<PagedList<ProductResponse>>> Handle(GetProductsQuery query, CancellationToken cancellationToken)
     {
-        using var connection = connectionFactory.CreateConnection();
+        using var connection = connectionFactory.CreateErpConnection();
 
         //TODO: SortColumns, SorOrder missing:
         string countSql = "SELECT COUNT (*) FROM tblVarer v WHERE 1=1";

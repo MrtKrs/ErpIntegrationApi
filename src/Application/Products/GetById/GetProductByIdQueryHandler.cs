@@ -12,7 +12,7 @@ internal sealed class GetProductByIdQueryHandler(IDbConnectionFactory connection
 {
     public async Task<Result<ProductResponse>> Handle(GetProductByIdQuery query, CancellationToken cancellationToken)
     {
-        using var connection = connectionFactory.CreateConnection();
+        using var connection = connectionFactory.CreateErpConnection();
 
         const string sql = @"
         SELECT 

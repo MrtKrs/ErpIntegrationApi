@@ -14,19 +14,14 @@ public class ApiKeyAuthOptions : AuthenticationSchemeOptions
     public const string SchemeName = "ApiKeyScheme";
 }
 
-public class ApiKeyAuthHandler : AuthenticationHandler<ApiKeyAuthOptions>
-{
-    //private readonly IConfiguration _configuration;
-    private readonly IApiKeyValidationService _apiKeyValidationService;
-
-    public ApiKeyAuthHandler(
+public class ApiKeyAuthHandler(
         IOptionsMonitor<ApiKeyAuthOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        IApiKeyValidationService apiKeyValidationService) : base ( options, logger, encoder)
-    {
-        _apiKeyValidationService = apiKeyValidationService;
-    }
+        IApiKeyValidationService apiKeyValidationService,
+        ITenantContext tenantContext) : AuthenticationHandler<ApiKeyAuthOptions>( options, logger, encoder)
+{
+
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -44,20 +39,21 @@ public class ApiKeyAuthHandler : AuthenticationHandler<ApiKeyAuthOptions>
         }
 
         string extractedKey = authHeaderValue.Substring("Api-Key ".Length).Trim();
-        var (isValid, permissions) = await _apiKeyValidationService.ValidateKeysAsync(extractedKey, Context.RequestAborted);
-        if(!isValid)
+        var validationResult = await apiKeyValidationService.ValidateAsync(extractedKey, Context.RequestAborted);
+        if(validationResult is null)
         {
             return AuthenticateResult.Fail("Invalid API Key.");
         }
 
+        tenantContext.SetDatabase(validationResult.DatabaseName);
+
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, "ApiUser"),
+            new Claim(ClaimTypes.NameIdentifier, validationResult.ClientId),
+            new Claim(ClaimTypes.Name, validationResult.ClientName),
         };
-        foreach(var permission in permissions)
-        {
-            claims.Add(new Claim("permissions", permission));
-        }
+        
+        claims.AddRange(validationResult.Permissions.Select(p=> new Claim("permissions", p)));
 
         var identity = new ClaimsIdentity(claims, ApiKeyAuthOptions.SchemeName);
         var principal = new ClaimsPrincipal(identity);

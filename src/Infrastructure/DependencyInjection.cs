@@ -44,8 +44,13 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("Database") 
             ?? throw new InvalidOperationException("Connection string 'Database' not found.");
+        
+        services.AddScoped<ITenantContext, TenantContext>();
 
-        services.AddSingleton<IDbConnectionFactory>(new DbConnectionFactory( connectionString));
+        services.AddScoped<IDbConnectionFactory>( sp =>
+            new DbConnectionFactory(
+                connectionString,
+                sp.GetRequiredService<ITenantContext>()));
 
         return services;
     }

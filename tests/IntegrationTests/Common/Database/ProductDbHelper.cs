@@ -26,7 +26,7 @@ public sealed class ProductDbHelper(IDbConnectionFactory connectionFactory)
             Price = price ?? fake.Price
         };
 
-        using var connection = connectionFactory.CreateConnection();
+        using var connection = connectionFactory.CreateErpConnection();
         int id = await connection.QuerySingleAsync<int>(@"
             INSERT INTO tblVarer (varenummer, varenavn, standardpris) 
             OUTPUT INSERTED.id
@@ -38,7 +38,7 @@ public sealed class ProductDbHelper(IDbConnectionFactory connectionFactory)
 
     public async Task<TestProduct?> GetProductByIdAsync(int id)
     {
-        using var connection = connectionFactory.CreateConnection();
+        using var connection = connectionFactory.CreateErpConnection();
 
         return await connection.QuerySingleOrDefaultAsync<TestProduct>(@"
             SELECT 
@@ -53,7 +53,7 @@ public sealed class ProductDbHelper(IDbConnectionFactory connectionFactory)
 
     internal async Task<int> GetMaxId()
     {
-        using var connection = connectionFactory.CreateConnection();
+        using var connection = connectionFactory.CreateErpConnection();
 
         var maxId = await connection.QuerySingleAsync<int>(@"
         SELECT COALESCE(MAX(id), 0) FROM tblVarer

@@ -4,5 +4,6 @@ namespace Application.Abstractions.Data;
 
 public interface IDbConnectionFactory
 {
-    IDbConnection CreateConnection();
+    IDbConnection CreateAuthConnection();
+    IDbConnection CreateErpConnection();
 }
