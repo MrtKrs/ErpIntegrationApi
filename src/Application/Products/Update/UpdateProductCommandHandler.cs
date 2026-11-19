@@ -12,7 +12,7 @@ public class UpdateProductCommandHandler( IDbConnectionFactory connectionFactory
 {
     public async Task<Result> Handle(UpdateProductCommand command, CancellationToken cancellationToken)
     {
-        using var connection = connectionFactory.CreateConnection();
+        using var connection = connectionFactory.CreateErpConnection();
 
         const string sql = @"
             UPDATE tblVarer

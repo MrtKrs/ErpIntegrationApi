@@ -6,11 +6,10 @@ using IntegrationTests.Common.Fakers;
 
 namespace IntegrationTests.Products;
 
-public class UpdateProductByIdTests : BaseIntegrationTest, IClassFixture<IntegrationTestCollection>
+public class UpdateProductByIdTests : BaseIntegrationTest
 {
     // TODO:
     // ShouldNotModifyStock_WhenUpdatingProductDetails
-    // ShouldReturnForbidden_WhenApiKeyLacksWritePermission
 
     private readonly ProductDbHelper _productDbHelper;
     //private readonly InventoryDbHelper _inventoryDbHelper;
@@ -82,5 +81,17 @@ public class UpdateProductByIdTests : BaseIntegrationTest, IClassFixture<Integra
             $"products/{1}", updateRequest);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ShouldReturnForbidden_WhenApiKeyLacksWritePermission()
+    {
+        var updateRequest = ProductFakers.UpdateRequest.Generate();
+
+        AuthenticateAsReadOnly();
+        HttpResponseMessage response = await HttpClient.PutAsJsonAsync(
+            $"products/{1}", updateRequest);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }

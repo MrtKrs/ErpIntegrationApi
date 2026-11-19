@@ -11,7 +11,7 @@ using IntegrationTests.Common.Database;
 
 namespace IntegrationTests.Products;
 
-public sealed class GetProductByIdTests : BaseIntegrationTest, IClassFixture<IntegrationTestCollection>
+public sealed class GetProductByIdTests : BaseIntegrationTest
 {
     private readonly ProductDbHelper _productDbHelper;
     private readonly InventoryDbHelper _inventoryDbHelper;
@@ -29,7 +29,7 @@ public sealed class GetProductByIdTests : BaseIntegrationTest, IClassFixture<Int
         var seededProduct = await _productDbHelper.SeedProductAsync();
 
         //Act
-        AuthenticateAsAdmin();
+        AuthenticateAsReadOnly();
         HttpResponseMessage response = await HttpClient.GetAsync($"products/{seededProduct.Id}");
 
         //Assert
