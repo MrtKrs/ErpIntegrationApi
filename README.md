@@ -1,51 +1,60 @@
-# GoErpApi based on Clean Architecture template
-Milan Jovanović's template:
-https://milanjovanovic.tech/templates/clean-architecture
+# GoErpApi
 
-## What's left from the template?
+REST API integration layer for an external SQL Server ERP database, built on [Milan Jovanović's Clean Architecture template](https://milanjovanovic.tech/templates/clean-architecture).
 
-- **SharedKernel** project with common Domain-Driven Design abstractions.
-- **Domain** layer with product entity *domain events removed*. [^1]
-- **Application** layer with abstractions for:
-  - CQRS (lightweight, MediatR-free command/query handlers)
-  - Cross-cutting concerns (logging, validation) implemented as decorators
-- **Infrastructure** layer with:
-  - Permission-based authorization
-  - *User login and JWT tokens replaced with Api-Key*.
-  - *EF Core removed, replaced with Dapper*. PostgreSQL only used for OpenTelemetry.
-  - *HybridCache unused* for fast, unified caching with cache invalidation. [^1]
-  - Serilog structured logging
-- **Web.Api** layer with:
-  - Minimal API endpoints
-  - **Rate limiting** (configurable global + authentication policies)
-  - **OpenTelemetry** tracing and metrics (ASP.NET Core, HTTP, Npgsql, runtime)
-  - Global exception handling and `ProblemDetails`
-  - Scalar API reference (OpenAPI)
-- **Grafana + Loki + Tempo + Prometheus** for logs, traces, and metrics, via the
-  bundled `grafana/otel-lgtm` image (the app ships telemetry over OTLP)
-  - Grafana is available at http://localhost:3000 by default
-- **Testing** projects
-  - Architecture testing (`ArchitectureTests`)
-  - Unit testing (`Application.UnitTests`)
-  - Integration testing with **Testcontainers** (`IntegrationTests`)
+## Architecture & Key Design Decisions
 
-## Getting started
-Configure database:
+Because the ERP desktop application owns the database schema and manages migrations directly, this API acts as a lightweight integration layer over the existing tables:
+
+- **Dapper instead of EF Core:** Provides explicit control over SQL queries and selects only the specific columns needed by each API endpoint from wide ERP tables (tblVarer, tblSalgsBilag), avoiding ORM change-tracking overhead or conflicting schema migrations.
+- **API-Key Authentication & Tenant Routing:** Replaced user logins and JWTs with `Authorization: Api-Key <key>`. Validating a key resolves both the client's permissions (`products:read`, `orders:read`, etc.) and the target ERP database (`InitialCatalog`) on the SQL Server instance via `ITenantContext`.
+- **No Domain Events or HybridCache:** Removed so the API always reads live data directly from the ERP database, ensuring changes made in the desktop application are immediately reflected in API responses.
+- **MediatR-Free CQRS + Decorators:** Uses lightweight `ICommandHandler` / `IQueryHandler` abstractions wrapped in logging and FluentValidation decorators (validating incoming API payloads before executing queries against the ERP database).
+
+## Solution Structure
+
+- **`src/SharedKernel`** — Core primitives (`Result`, `Error`, `ValidationError`).
+- **`src/Domain`** — Domain entities (`Product`, `Order`) and domain error definitions.
+- **`src/Application`** — Use cases (`GetProducts`, `UpdateProduct`, `GetOrders`), shared pagination/SQL helpers (`Application.Abstractions.Pagination`), and FluentValidation validators.
+- **`src/Infrastructure`** — Dapper `IDbConnectionFactory`, `ITenantContext` database switching, `ApiKeyAuthHandler`, permission authorization, and Serilog/OpenTelemetry setup.
+- **`src/Web.Api`** — Minimal API endpoints, global exception handling (`ProblemDetails`), rate limiting, and Scalar OpenAPI UI.
+- **`tests/`** — `ArchitectureTests` (layer dependency rules), `Application.UnitTests`, and `IntegrationTests` (Testcontainers with isolated SQL Server databases).
+
+## Getting Started
+
+### 1. Configure the SQL Server Connection
+Set the base SQL Server connection string pointing to the central Auth database (the API uses this default catalog to validate API keys, then dynamically switches InitialCatalog to the key's assigned ERP database).
+
 ```bash
-dotnet user-secrets set "ConnectionStrings:Database" "<ConnectionString>" --project src/Web.Api
+dotnet user-secrets set "ConnectionStrings:Database" "Server=...;Database=<AuthDatabaseName>;User Id=...;Password=...;TrustServerCertificate=True;" --project src/Web.Api
 ```
 
-Run, by default access at: http://localhost:5000/scalar/:
+### 2. Start Observability Stack & Run the API
 ```bash
-docker compose up -d        # PostgreSQL + Grafana/Loki/Tempo
+docker compose up -d        # Starts Grafana + Loki + Tempo + Prometheus (and PostgreSQL if still defined in compose)
 dotnet run --project src/Web.Api
 ```
 
-Run the full test suite (the integration tests spin up a throwaway MSSQL container,
-so Docker must be running):
+- **Scalar API Reference:** `http://localhost:5000/scalar/`
+- **Grafana Telemetry UI:** `http://localhost:3000` (logs, traces, and metrics shipped via OTLP)
+
+### 3. Authenticating in Scalar
+Endpoints require an `Authorization` header using the `Api-Key` scheme:
+```http
+Authorization: Api-Key <your-api-key>
+```
+*(Note: API keys are currently mocked in `Infrastructure/Authentication/ApiKeyValidationService.cs` with an inline SQL/Dapper reference ready for wiring to a central Auth database).*
+
+## Running Tests
+
+Ensure Docker is running, as `IntegrationTests` spins up a throwaway SQL Server container and creates named test databases (`ERP_Test_CustomerA`):
+
 ```bash
 dotnet test GoErpApi.slnx
 ```
 
-[^1]: Domain events were removed as the API does not have control over the database and so there
-nothing to notify CacheLayer.
+## Adding a New Feature Slice (Convention Guide)
+
+1. **Application:** Create a feature folder under `src/Application/<Entity>/<Action>/` with the Query/Command, Response `record`, Validator (inheriting `PagedQueryValidator<T>` for list endpoints), and Dapper Handler.
+2. **Web.Api:** Add a Minimal API endpoint under `src/Web.Api/Endpoints/<Entity>/` protected with `.HasPermission(":read|write")`.
+3. **Tests:** Add table DDL to `IntegrationTestWebAppFactory`, create a `Test<Entity>` record + Bogus faker + `DbHelper` (`Func<T, T>` customization), and write Shouldly integration tests.
