@@ -45,7 +45,7 @@ public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program
                     "100", 
                     "Test ReadOnly", 
                     TestErpDatabaseName, 
-                    ["products:read"])
+                    ["products:read","orders:read"])
             };
 
             services.RemoveAll<IApiKeyValidationService>();

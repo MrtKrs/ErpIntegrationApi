@@ -19,7 +19,7 @@ public class GetOrdersTests : BaseIntegrationTest
     [Fact]
     public async Task ShouldReturnFilteredResults_WhenSearchMatches()
     {
-        string searchTerm = $"Acme-{Guid.NewGuid().ToString("N")}[..8]";
+        string searchTerm = $"Acme-{Guid.NewGuid().ToString("N")[..8]}";
 
         await _orderDbHelper.SeedOrderAsync();
 
@@ -38,7 +38,8 @@ public class GetOrdersTests : BaseIntegrationTest
             $"orders?page=1&pageSize=10&search={Uri.EscapeDataString(searchTerm)}"
         );
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        string responseBody = await response.Content.ReadAsStringAsync();
+        response.StatusCode.ShouldBe(HttpStatusCode.OK, responseBody);
 
         var result = await response.Content.ReadFromJsonAsync<PagedList<OrderResponse>>();
         result.ShouldNotBeNull();
