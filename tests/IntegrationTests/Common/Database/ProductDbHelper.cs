@@ -12,19 +12,10 @@ public sealed record TestProduct(
 
 public sealed class ProductDbHelper(IDbConnectionFactory connectionFactory)
 {
-    public async Task<TestProduct> SeedProductAsync(
-        string? sku = null,
-        string? name = null,
-        string? price = null)
+    public async Task<TestProduct> SeedProductAsync(Func<TestProduct, TestProduct>? customize = null)
     {
         var fake = ProductFakers.SeedProduct.Generate();
-
-        var product = fake with
-        {
-            Sku = sku ?? fake.Sku,
-            Name = name ?? fake.Name,
-            Price = price ?? fake.Price
-        };
+        var product = customize is null ? fake : customize(fake);
 
         using var connection = connectionFactory.CreateErpConnection();
         int id = await connection.QuerySingleAsync<int>(@"
