@@ -96,6 +96,26 @@ public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program
                     [disponibel] [int] NULL,
                     [bestilt] [int] NULL,
                 );
+            END;
+
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'tblSalgsBilag' AND xtype='U')
+            BEGIN
+                CREATE TABLE [dbo].[tblSalgsBilag](
+                    [id] [int] IDENTITY(1,1) NOT NULL,
+                    [bilagsid] [nvarchar](50) NULL,
+                    [bilagstype] [int] NULL,
+                    [bilagsdato] [date] NULL,
+                    [nettobeløb] [nvarchar](50) NULL,
+                    [moms] [nvarchar](50) NULL,
+                    [bilagsbeløb] [nvarchar](50) NULL,
+                    [debitorid] [int] NULL,
+                    [debitornr] [nvarchar](50) NULL,
+                    [debitornavn] [nvarchar](50) NULL,
+                    [bemærkninger] [ntext] NULL,
+                    [sælgernavn] [nvarchar](50) NULL,
+                    [fakturanr] [nvarchar](50) NULL,
+                    [vedrbilagsnr] [nvarchar](50) NULL
+                );
             END;";
 
         await erpConnection.ExecuteAsync(initializeSchemaSql);

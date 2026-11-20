@@ -8,16 +8,11 @@ namespace IntegrationTests.Common.Fakers;
 
 public static class ProductFakers
 {
-    private const string CultureName = "da-DK";
-    private const string PriceFormat = "N2";
-    private const string CurrencySuffix = "kr.";
     private const string SeedSkuPrefix = "SKU-";
     private const string UpdateSkuPrefix = "UPD-";
     private const int SkuRandomLength = 8;
     private const decimal MinPrice = 10m;
     private const decimal MaxPrice = 999m;
-
-    private static readonly CultureInfo DanishCulture = CultureInfo.GetCultureInfo(CultureName);
 
     internal static Faker<Update.Request> UpdateRequest {get;} = new Faker<Update.Request>()
         .CustomInstantiator(f => new Update.Request(
@@ -37,6 +32,6 @@ public static class ProductFakers
     private static string GenerateSku(Faker f, string prefix) =>
         $"{prefix}{f.Random.AlphaNumeric(SkuRandomLength).ToUpperInvariant()}";
         
-    private static string GeneratePrice(Faker f) =>
-        $"{f.Random.Decimal(MinPrice, MaxPrice).ToString(PriceFormat, DanishCulture)} {CurrencySuffix}";
+    private static string GeneratePrice(Faker f) => 
+        FakerDefaults.FormatAmount(Math.Round(f.Random.Decimal(MinPrice, MaxPrice), 2));
 }

@@ -40,16 +40,16 @@ public class GetProductsTests : BaseIntegrationTest
     {
         string searchTerm = $"Industrial-{Guid.NewGuid().ToString("N")[..8]}";
 
-        // Match 1: Matches via Name ('varenavn')
-        TestProduct widget = await _productDbHelper.SeedProductAsync(
-            name: $"Widget {searchTerm}");
-
         // Non-match: Default Bogus data won't contain searchTerm
         await _productDbHelper.SeedProductAsync();
 
+        // Match 1: Matches via Name ('varenavn')
+        TestProduct widget = await _productDbHelper.SeedProductAsync( p => 
+            p with{Name = $"Widget {searchTerm}"});
+
         // Match 2: Matches via SKU ('varenummer')
-        TestProduct gear = await _productDbHelper.SeedProductAsync(
-            sku: $"Sku-{searchTerm}");
+        TestProduct gear = await _productDbHelper.SeedProductAsync( p => 
+            p with {Sku = $"Sku-{searchTerm}"});
         
         AuthenticateAsAdmin();
         HttpResponseMessage response = await HttpClient.GetAsync(
@@ -74,7 +74,8 @@ public class GetProductsTests : BaseIntegrationTest
 
         for(int i = 1; i<=seededCount; i++) 
         {
-            await _productDbHelper.SeedProductAsync(sku: $"Sku{i}-{scope}");
+            await _productDbHelper.SeedProductAsync( p => 
+                p with {Sku = $"Sku{i}-{scope}"});
         }
 
         AuthenticateAsAdmin();
