@@ -37,12 +37,12 @@ public class GetOrdersQueryHandler(IDbConnectionFactory connectionFactory)
         """;
 
         var parameters = new DynamicParameters();
-        parameters.Add("Offset", (query.Page-1) * query.PageSize);
+        parameters.Add("Offset", query.GetOffSet());
         parameters.Add("PageSize", query.PageSize);
 
-        if(!string.IsNullOrWhiteSpace(query.Search))
+        string? searchPattern = query.ToSqlLikePattern();
+        if(searchPattern is not null)
         {
-            string searchPattern = $"%{query.Search}%";
             parameters.Add("SearchPattern", searchPattern);
 
             string searchFilter = " AND ( sb.[bilagsid] LIKE @SearchPattern OR sb.[debitornavn] LIKE @SearchPattern )";

@@ -12,20 +12,18 @@ internal sealed class Get : IEndpoint
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
         app.MapGet("orders", async (
-            string? search,
+            [AsParameters] PagedRequest request,
             string? sortColumn,
             string? sortOrder,
-            int? page,
-            int? pageSize,
             IQueryHandler<GetOrdersQuery, PagedList<OrderResponse>> handler,
             CancellationToken cancellationToken) =>
         {
             var query = new GetOrdersQuery(
-                search,
+                request.Search,
                 sortColumn,
                 sortOrder,
-                page ?? 1,
-                pageSize ?? 10);
+                request.Page,
+                request.PageSize);
 
                 Result<PagedList<OrderResponse>> result = await handler.Handle(query, cancellationToken);
                 return result.Match(Results.Ok, CustomResults.Problem);
