@@ -7,5 +7,5 @@ public sealed record GetProductsQuery(
     string? Search,
     string? SortColumn,
     string? SortOrder,
-    int Page,
-    int PageSize) : IQuery<PagedList<ProductResponse>>;
+    int Page = 1,
+    int PageSize = 1) : IQuery<PagedList<ProductResponse>>, IPagedQuery;
