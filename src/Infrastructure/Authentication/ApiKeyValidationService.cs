@@ -2,70 +2,60 @@ using System;
 using Dapper;
 using Application.Abstractions.Data;
 using Application.Abstractions.Authentication;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace Infrastructure.Authentication;
 
 internal sealed class ApiKeyValidationService(
-    IDbConnectionFactory connectionFactory,
-    IReadOnlyDictionary<string, ApiKeyValidationResult>? keys = null) : IApiKeyValidationService
+    IDbConnectionFactory connectionFactory) : IApiKeyValidationService
 {
-    private static readonly Dictionary<string, ApiKeyValidationResult> DefaultDevKeys = new(StringComparer.Ordinal)
-    {
-        // DatabaseNames need to exist when running locally, this could be extracted to config 
-        // or replaced completely when able to auth against DB.
-        ["dev-admin-key-A"] = new(
-            ClientId: "1",
-            ClientName: "Dev Admin A",
-            DatabaseName: "ERP_Dev_CustomerA",
-            Permissions: ["products:read", "products:write", "orders:read", "orders:write"]),
-        ["dev-readonly-key-A"] = new(
-            ClientId: "2",
-            ClientName: "Dev Reader A ",
-            DatabaseName: "ERP_Dev_CustomerA",
-            Permissions: ["products:read", "orders:read"]),
-        ["dev-admin-key-B"] = new(
-            ClientId: "91",
-            ClientName: "Dev Admin B",
-            DatabaseName: "ERP_Dev_CustomerB",
-            Permissions: ["products:read", "products:write", "orders:read", "orders:write"]),
-        ["dev-readonly-key-B"] = new(
-            ClientId: "92",
-            ClientName: "Dev Reader B",
-            DatabaseName: "ERP_Dev_CustomerB",
-            Permissions: ["products:read", "orders:read"]),
-    };
-
-    private readonly IReadOnlyDictionary<string, ApiKeyValidationResult> _keys = keys ?? DefaultDevKeys;
+    private sealed record ApiKeyDbRow(
+        int ClientId,
+        string ClientName,
+        string DatabaseName,
+        string PermissionsJson);
 
     public async Task<ApiKeyValidationResult?> ValidateAsync (string apiKey, CancellationToken cancellationToken)
     {
-        // TODO IMemoryCache?
+        // TODO: short IMemoryCache ?
         
-        // Remove when implementing:
-        _ = connectionFactory;
-
         if (string.IsNullOrWhiteSpace(apiKey))
         {
             return null;
         }
-        _keys.TryGetValue(apiKey, out var result);
-        return await Task.FromResult(result);
-        
-        // HASH apiKey and Validate against hashed key in DB
-        // Example:
-        // using var connection = connectionFactory.CreateAuthConnection();
-        // const string sql = @"
-        //  SELECT 
-        //      k.Id AS ClientId,
-        //      k.ClientName,
-        //      k.DatabaseName,
-        //      p.PermissionName
-        //  FROM ApiKeys k
-        //  LEFT JOIN ApiKeyPermissions p ON p.ApiKeyId = k.Id
-        //      WHERE k.KeyHash = @KeyHash
-        //      AND k.IsActive = 1
-        //      AND (k.ExpiresAtUtc IS NULL OR k.ExpiresAtUtc > GETUTCDATE());"
 
-        //return null;
+        string keyHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(apiKey)));
+        const string sql = """
+            SELECT 
+                c.[id] AS ClientId, 
+                c.[clientname] AS ClientName,
+                c.[databasename] AS DatabaseName,
+                c.[permissionsjson] AS PermissionsJson
+            FROM dbo.[tblApiKey] k 
+            INNER JOIN dbo.[tblApiClient] c ON k.[clientid] = c.[id]
+            WHERE k.[keyhash] = @KeyHash
+                AND k.[isrevoked] = 0
+                AND c.[isactive] = 1
+                AND (k.[expiresatutc] IS NULL OR k.[expiresatutc] > SYSUTCDATETIME());
+            """;
+        
+        using var connection = connectionFactory.CreateAuthConnection();
+        var row = await connection.QuerySingleOrDefaultAsync<ApiKeyDbRow>(
+            new CommandDefinition(sql, new {KeyHash = keyHash}, cancellationToken: cancellationToken));
+
+        if (row is null)
+        {
+            return null;
+        }
+
+        string[] permissions = JsonSerializer.Deserialize<string[]>(row.PermissionsJson )?? [];
+
+        return new ApiKeyValidationResult(
+            ClientId: row.ClientId,
+            ClientName: row.ClientName,
+            DatabaseName: row.DatabaseName,
+            Permissions: permissions);
     }
 }

@@ -38,12 +38,57 @@ dotnet run --project src/Web.Api
 - **Scalar API Reference:** `http://localhost:5000/scalar/`
 - **Grafana Telemetry UI:** `http://localhost:3000` (logs, traces, and metrics shipped via OTLP)
 
-### 3. Authenticating in Scalar
+### 3. Provisioning & Authenticating API Keys
 Endpoints require an `Authorization` header using the `Api-Key` scheme:
 ```http
 Authorization: Api-Key <your-api-key>
 ```
-*(Note: API keys are currently mocked in `Infrastructure/Authentication/ApiKeyValidationService.cs` with an inline SQL/Dapper reference ready for wiring to a central Auth database).*
+
+API clients and keys are provisioned directly in the central Auth database (`dbo.tblApiClient` and `dbo.tblApiKey`). 
+
+
+<details>
+<summary>Auth Database Schema (SQL Server DDL)</summary>
+
+```sql
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'tblApiClient' AND xtype='U')
+BEGIN
+    CREATE TABLE dbo.[tblApiClient] (
+        [id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        [clientname] NVARCHAR(100) NOT NULL,
+        [databasename] NVARCHAR(100) NOT NULL,
+        [permissionsjson] NVARCHAR(MAX) NOT NULL,
+        [isactive] BIT NOT NULL DEFAULT 1,
+        [createdatutc] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+END;
+
+IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'tblApiKey' AND xtype='U')
+BEGIN
+    CREATE TABLE dbo.[tblApiKey] (
+        [keyhash] CHAR(64) NOT NULL PRIMARY KEY,
+        [clientid] INT NOT NULL,
+        [expiresatutc] DATETIME2 NULL,
+        [isrevoked] BIT NOT NULL DEFAULT 0,
+        [createdatutc] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT FK_tblApiKey_tblApiClient FOREIGN KEY (clientid) REFERENCES dbo.tblApiClient(id)
+    );
+CREATE INDEX IX_tblApiKey_clientid ON dbo.tblApiKey(clientid);
+END;
+```
+
+</details>
+
+Because the API validates keys by comparing the **uppercase SHA-256 hex hash** of the incoming token, hash your raw key before inserting it:
+
+```sql
+INSERT INTO dbo.tblApiClient (clientname, databasename, permissionsjson)
+VALUES ('Customer A', 'ERP_CustomerA', '["products:read","products:write","orders:read"]');
+
+INSERT INTO dbo.tblApiKey (keyhash, clientid)
+VALUES (CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CAST('<your-raw-api-key>' AS VARCHAR(MAX))), 2), SCOPE_IDENTITY());
+```
+
 
 ## Running Tests
 

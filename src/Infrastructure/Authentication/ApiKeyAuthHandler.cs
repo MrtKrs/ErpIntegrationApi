@@ -1,4 +1,4 @@
-using System;
+using System.Globalization;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Application.Abstractions.Authentication;
@@ -49,8 +49,9 @@ public class ApiKeyAuthHandler(
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, validationResult.ClientId),
+            new Claim(ClaimTypes.NameIdentifier, validationResult.ClientId.ToString(CultureInfo.InvariantCulture)),
             new Claim(ClaimTypes.Name, validationResult.ClientName),
+            new Claim("database_name", validationResult.DatabaseName),
         };
         
         claims.AddRange(validationResult.Permissions.Select(p=> new Claim("permissions", p)));
