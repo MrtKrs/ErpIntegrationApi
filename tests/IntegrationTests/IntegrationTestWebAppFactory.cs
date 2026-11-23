@@ -4,6 +4,7 @@ using Application.Abstractions.Data;
 using Dapper;
 using Infrastructure.Authentication;
 using Infrastructure.Database;
+using IntegrationTests.Common.Database;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -17,7 +18,6 @@ namespace IntegrationTests;
 
 public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    public const string TestErpDatabaseName = "ERP_Test_CustomerA";
     private readonly MsSqlContainer _dbContainer = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
         .Build();
 
@@ -32,26 +32,6 @@ public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program
         builder.UseSetting("RateLimiting:Global:PermitLimit", "100000");
         builder.UseSetting("RateLimiting:Authentication:PermitLimit", "100000");
 
-        builder.ConfigureTestServices(services =>
-        {
-            var testKeys = new Dictionary<string, ApiKeyValidationResult>(StringComparer.Ordinal)
-            {
-                [BaseIntegrationTest.AdminApiKey] = new(
-                    "99", 
-                    "Test Admin", 
-                    TestErpDatabaseName, 
-                    ["products:read", "products:write"]),
-                [BaseIntegrationTest.ReadOnlyApiKey] = new(
-                    "100", 
-                    "Test ReadOnly", 
-                    TestErpDatabaseName, 
-                    ["products:read","orders:read"])
-            };
-
-            services.RemoveAll<IApiKeyValidationService>();
-            services.AddScoped<IApiKeyValidationService>(sp =>
-                new ApiKeyValidationService(sp.GetRequiredService<IDbConnectionFactory>(), testKeys));
-        });
     }
 
     public async Task InitializeAsync()
@@ -66,14 +46,59 @@ public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program
         using (IDbConnection authConnection = connectionFactory.CreateAuthConnection())
         {
             await authConnection.ExecuteAsync($"""
-                IF DB_ID('{TestErpDatabaseName}') IS NULL
-                    CREATE DATABASE [{TestErpDatabaseName}];
+                IF DB_ID('{BaseIntegrationTest.TestErpDatabaseName}') IS NULL
+                    CREATE DATABASE [{BaseIntegrationTest.TestErpDatabaseName}];
+            """);
+
+            await authConnection.ExecuteAsync("""
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'tblApiClient' AND xtype='U')
+            BEGIN
+                CREATE TABLE dbo.[tblApiClient] (
+                    [id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    [clientname] NVARCHAR(100) NOT NULL,
+                    [databasename] NVARCHAR(100) NOT NULL,
+                    [permissionsjson] NVARCHAR(MAX) NOT NULL,
+                    [isactive] BIT NOT NULL DEFAULT 1,
+                    [createdatutc] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+                );
+            END;
+
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name = 'tblApiKey' AND xtype='U')
+            BEGIN
+                CREATE TABLE dbo.[tblApiKey] (
+                    [keyhash] CHAR(64) NOT NULL PRIMARY KEY,
+                    [clientid] INT NOT NULL,
+                    [expiresatutc] DATETIME2 NULL,
+                    [isrevoked] BIT NOT NULL DEFAULT 0,
+                    [createdatutc] DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+                    CONSTRAINT FK_tblApiKey_tblApiClient FOREIGN KEY (clientid) REFERENCES dbo.tblApiClient(id)
+                );
+            CREATE INDEX IX_tblApiKey_clientid ON dbo.tblApiKey(clientid);
+            END;
             """);
         }
+
+        var apiKeyDbHelper = new ApiKeyDbHelper(connectionFactory);
+
+        await apiKeyDbHelper.SeedApiKeyAsync(k => k with
+        {
+            RawKey = BaseIntegrationTest.AdminApiKey,
+            ClientName = "Integration Test Admin",
+            DatabaseName = BaseIntegrationTest.TestErpDatabaseName,
+            Permissions = ["products:read", "products:write", "orders:read", "orders:write"]
+        });
+
+        await apiKeyDbHelper.SeedApiKeyAsync(k => k with
+        {
+            RawKey = BaseIntegrationTest.ReadOnlyApiKey,
+            ClientName = "Integration Test ReadOnly",
+            DatabaseName = BaseIntegrationTest.TestErpDatabaseName,
+            Permissions = ["products:read", "orders:read"] 
+        });
         
-        tenantContext.SetDatabase(TestErpDatabaseName);
+        tenantContext.SetDatabase(BaseIntegrationTest.TestErpDatabaseName);
         using IDbConnection erpConnection = connectionFactory.CreateErpConnection();
-        const string initializeSchemaSql = @"
+        const string initializeSchemaSql = """
             IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='tblVarer' AND xtype='U')
             BEGIN
                 CREATE TABLE [dbo].[tblVarer](
@@ -116,7 +141,8 @@ public sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program
                     [fakturanr] [nvarchar](50) NULL,
                     [vedrbilagsnr] [nvarchar](50) NULL
                 );
-            END;";
+            END;
+            """;
 
         await erpConnection.ExecuteAsync(initializeSchemaSql);
     }

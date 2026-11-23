@@ -8,7 +8,6 @@ namespace Web.Api.Extensions;
 internal sealed class ApiKeySecuritySchemeTransformer(IAuthenticationSchemeProvider authenticationSchemeProvider)
     : IOpenApiDocumentTransformer
 {
-    //private const string SchemeName = ApiKeyAuthOptions.SchemeName;
     public async Task TransformAsync(
         OpenApiDocument document,
         OpenApiDocumentTransformerContext context,
