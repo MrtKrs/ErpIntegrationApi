@@ -8,6 +8,7 @@ using Dapper;
 using Domain.Products;
 using System.Diagnostics.Contracts;
 using IntegrationTests.Common.Database;
+using System.Collections.Immutable;
 
 namespace IntegrationTests.Products;
 
@@ -28,11 +29,11 @@ public class GetProductsTests : BaseIntegrationTest
         HttpResponseMessage response = await HttpClient.GetAsync(
             $"products?page=1&pageSize=10&search={searchTerm}");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
         
         var result = await response.Content.ReadFromJsonAsync<PagedList<Product>>();
-        Assert.NotNull(result);
-        Assert.Empty(result.Items);
+        result.ShouldNotBeNull();
+        result.Items.ShouldBeEmpty();
     }
 
     [Fact]
@@ -55,14 +56,14 @@ public class GetProductsTests : BaseIntegrationTest
         HttpResponseMessage response = await HttpClient.GetAsync(
             $"products?page=1&pageSize=10&search={Uri.EscapeDataString(searchTerm)}");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
         
         var result = await response.Content.ReadFromJsonAsync<PagedList<ProductResponse>>();
-        Assert.NotNull(result);
-        Assert.Equal(2, result.Items.Count);
-        Assert.Equal(2, result.TotalCount);
-        Assert.Contains(result.Items, p => p.Id == widget.Id);
-        Assert.Contains(result.Items, p => p.Id == gear.Id);
+        result.ShouldNotBeNull();
+        result.Items.Count.ShouldBe(2);
+        result.TotalCount.ShouldBe(2);
+        result.Items.ShouldContain(p => p.Id == widget.Id);
+        result.Items.ShouldContain(p => p.Id == gear.Id);
     }
 
     [Fact]
@@ -82,13 +83,13 @@ public class GetProductsTests : BaseIntegrationTest
             HttpResponseMessage response = await HttpClient.GetAsync(
         $"products?page=1&pageSize={pageSize}&search={scope}");
         
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         var result = await response.Content.ReadFromJsonAsync<PagedList<ProductResponse>>();
-        Assert.NotNull(result);
-        Assert.Equal(pageSize, result.Items.Count);
-        Assert.Equal(seededCount, result.TotalCount);
-        Assert.True(result.HasNextPage);
-        Assert.False(result.HasPreviousPage);
+        result.ShouldNotBeNull();
+        result.Items.Count.ShouldBe(pageSize);
+        result.TotalCount.ShouldBe(seededCount);
+        result.HasNextPage.ShouldBeTrue();
+        result.HasPreviousPage.ShouldBeFalse();
     }
 }
