@@ -8,9 +8,6 @@ namespace IntegrationTests.Products;
 
 public class UpdateProductByIdTests : BaseIntegrationTest
 {
-    // TODO:
-    // ShouldNotModifyStock_WhenUpdatingProductDetails
-
     private readonly ProductDbHelper _productDbHelper;
     //private readonly InventoryDbHelper _inventoryDbHelper;
 
