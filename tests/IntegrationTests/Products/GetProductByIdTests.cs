@@ -30,13 +30,13 @@ public sealed class GetProductByIdTests : BaseIntegrationTest
         AuthenticateAsReadOnly();
         HttpResponseMessage response = await HttpClient.GetAsync($"products/{seededProduct.Id}");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
         ProductResponse? result = await response.Content.ReadFromJsonAsync<ProductResponse>();
-        Assert.NotNull(result);
-        Assert.Equal(seededProduct.Id, result.Id);
-        Assert.Equal(seededProduct.Sku, result.Sku);
-        Assert.Equal(seededProduct.Name, result.Name);
-        Assert.Equal(seededProduct.Price, result.Price);
+        result.ShouldNotBeNull();
+        result.Id.ShouldBe(seededProduct.Id);
+        result.Sku.ShouldBe(seededProduct.Sku);
+        result.Name.ShouldBe(seededProduct.Name);
+        result.Price.ShouldBe(seededProduct.Price);
     }
 
     [Fact]
@@ -49,12 +49,12 @@ public sealed class GetProductByIdTests : BaseIntegrationTest
         AuthenticateAsAdmin();
         var response = await HttpClient.GetAsync($"products/{seededProduct.Id}");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var product = await response.Content.ReadFromJsonAsync<ProductResponse>();
-        Assert.NotNull(product);
-        Assert.Equal(seededProduct.Id, product.Id);
-        Assert.Equal(seededInventory.Stock, product.StockQuantity);
-        Assert.Equal(seededInventory.Available, product.AvailableQuantity); 
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        ProductResponse? result = await response.Content.ReadFromJsonAsync<ProductResponse>();
+        result.ShouldNotBeNull();
+        result.Id.ShouldBe(seededProduct.Id);
+        ((int?)result.StockQuantity).ShouldBe(seededInventory.Stock);
+        ((int?)result.AvailableQuantity).ShouldBe(seededInventory.Available);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public sealed class GetProductByIdTests : BaseIntegrationTest
 
         HttpResponseMessage response = await HttpClient.GetAsync($"products/{maxId + 1000000}");
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     
@@ -77,6 +77,6 @@ public sealed class GetProductByIdTests : BaseIntegrationTest
 
         HttpResponseMessage response = await HttpClient.GetAsync($"/products/{productId}");
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 }

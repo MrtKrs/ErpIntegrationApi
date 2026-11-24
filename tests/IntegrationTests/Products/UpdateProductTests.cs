@@ -8,9 +8,6 @@ namespace IntegrationTests.Products;
 
 public class UpdateProductByIdTests : BaseIntegrationTest
 {
-    // TODO:
-    // ShouldNotModifyStock_WhenUpdatingProductDetails
-
     private readonly ProductDbHelper _productDbHelper;
     //private readonly InventoryDbHelper _inventoryDbHelper;
 
@@ -31,13 +28,13 @@ public class UpdateProductByIdTests : BaseIntegrationTest
         HttpResponseMessage response = await HttpClient.PutAsJsonAsync(
             $"products/{seededProduct.Id}", updateRequest);
 
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         var dbProduct = await _productDbHelper.GetProductByIdAsync(seededProduct.Id);
-        Assert.NotNull(dbProduct);
-        Assert.Equal(updateRequest.Sku, dbProduct.Sku);
-        Assert.Equal(updateRequest.Name, dbProduct.Name);
-        Assert.Equal(updateRequest.Price, dbProduct.Price);
+        dbProduct.ShouldNotBeNull();
+        dbProduct.Sku.ShouldBe(updateRequest.Sku);
+        dbProduct.Name.ShouldBe(updateRequest.Name);
+        dbProduct.Price.ShouldBe(updateRequest.Price);
     }
 
     [Fact]
@@ -50,7 +47,7 @@ public class UpdateProductByIdTests : BaseIntegrationTest
         HttpResponseMessage response = await HttpClient.PutAsJsonAsync(
             $"products/{maxId+10000000}", updateRequest);
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -63,13 +60,13 @@ public class UpdateProductByIdTests : BaseIntegrationTest
         HttpResponseMessage response = await HttpClient.PutAsJsonAsync(
             $"products/{seededProduct.Id}", updateRequest);
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 
         var dbProduct = await _productDbHelper.GetProductByIdAsync(seededProduct.Id);
-        Assert.NotNull(dbProduct);
-        Assert.Equal(seededProduct.Sku, dbProduct.Sku);
-        Assert.Equal(seededProduct.Name, dbProduct.Name);
-        Assert.Equal(seededProduct.Price, dbProduct.Price);
+        dbProduct.ShouldNotBeNull();
+        dbProduct.Sku.ShouldBe(seededProduct.Sku);
+        dbProduct.Name.ShouldBe(seededProduct.Name);
+        dbProduct.Price.ShouldBe(seededProduct.Price);
     }
 
     [Fact]
@@ -80,7 +77,7 @@ public class UpdateProductByIdTests : BaseIntegrationTest
         HttpResponseMessage response = await HttpClient.PutAsJsonAsync(
             $"products/{1}", updateRequest);
 
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -92,6 +89,6 @@ public class UpdateProductByIdTests : BaseIntegrationTest
         HttpResponseMessage response = await HttpClient.PutAsJsonAsync(
             $"products/{1}", updateRequest);
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 }
