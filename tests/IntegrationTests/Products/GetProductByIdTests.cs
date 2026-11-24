@@ -23,16 +23,13 @@ public sealed class GetProductByIdTests : BaseIntegrationTest
     }
 
     [Fact]
-    public async Task WhenProductExists_ShouldReturnProductData()
+    public async Task ShouldReturnProductData_WhenProductExists()
     {
-        //Arrange
         var seededProduct = await _productDbHelper.SeedProductAsync();
 
-        //Act
         AuthenticateAsReadOnly();
         HttpResponseMessage response = await HttpClient.GetAsync($"products/{seededProduct.Id}");
 
-        //Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         ProductResponse? result = await response.Content.ReadFromJsonAsync<ProductResponse>();
         Assert.NotNull(result);
@@ -43,7 +40,7 @@ public sealed class GetProductByIdTests : BaseIntegrationTest
     }
 
     [Fact]
-    public async Task WhenProductExists_ShouldReturnProductWithInventory()
+    public async Task ShouldReturnProductWithInventory_WhenProductExists()
     {
         var seededProduct = await _productDbHelper.SeedProductAsync();
 
@@ -61,7 +58,7 @@ public sealed class GetProductByIdTests : BaseIntegrationTest
     }
 
     [Fact]
-    public async Task WhenProductNotExists_ShouldReturnNotFound()
+    public async Task ShouldReturnNotFound_WhenProductNotExists()
     {
         var maxId = await _productDbHelper.GetMaxId();
         AuthenticateAsAdmin();
@@ -74,15 +71,12 @@ public sealed class GetProductByIdTests : BaseIntegrationTest
     
 
     [Fact]
-    public async Task WhenNoApiKeyIsProvided_ShouldReturnUnauthorized()
+    public async Task ShouldReturnUnauthorized_WhenNoApiKeyIsProvided()
     {
-        //Arrange
         int productId = 678;
 
-        //Act
         HttpResponseMessage response = await HttpClient.GetAsync($"/products/{productId}");
 
-        //Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }

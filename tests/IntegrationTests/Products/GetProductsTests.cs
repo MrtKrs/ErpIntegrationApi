@@ -21,7 +21,7 @@ public class GetProductsTests : BaseIntegrationTest
     }
 
     [Fact]
-     public async Task GetProducts_ShouldReturnEmptyList_WhenNoSearchMatches()
+     public async Task ShouldReturnEmptyList_WhenNoSearchMatches()
     {
         string searchTerm = $"{Guid.NewGuid():N}";
         AuthenticateAsAdmin();
@@ -36,7 +36,7 @@ public class GetProductsTests : BaseIntegrationTest
     }
 
     [Fact]
-    public async Task GetProducts_ShouldReturnFilteredResults_WhenSearchMatches()
+    public async Task ShouldReturnFilteredResults_WhenSearchMatches()
     {
         string searchTerm = $"Industrial-{Guid.NewGuid().ToString("N")[..8]}";
 
@@ -66,7 +66,7 @@ public class GetProductsTests : BaseIntegrationTest
     }
 
     [Fact]
-    public async Task GetProducts_ShouldEnforcePagination_WhenPageSizeIsSpecified()
+    public async Task ShouldEnforcePagination_WhenPageSizeIsSpecified()
     {
         string scope = Guid.NewGuid().ToString("N")[..8];
         const int seededCount = 3;
