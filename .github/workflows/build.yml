@@ -26,13 +26,13 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Restore
-        run: dotnet restore GoErpApi.slnx
+        run: dotnet restore ErpIntegrationApi.slnx
 
       - name: Build
-        run: dotnet build GoErpApi.slnx --configuration Release --no-restore
+        run: dotnet build ErpIntegrationApi.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test GoErpApi.slnx --configuration Release --no-restore --no-build
+        run: dotnet test ErpIntegrationApi.slnx --configuration Release --no-restore --no-build
 
       - name: Publish
-        run: dotnet publish GoErpApi.slnx --configuration Release --no-restore --no-build
+        run: dotnet publish ErpIntegrationApi.slnx --configuration Release --no-restore --no-build

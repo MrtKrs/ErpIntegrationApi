@@ -1,6 +1,8 @@
-# GoErpApi
+# ErpIntegrationApi
 
 REST API integration layer for an external SQL Server ERP database, built on [Milan Jovanović's Clean Architecture template](https://milanjovanovic.tech/templates/clean-architecture).
+
+Built as a proof-of-concept REST API integration layer during a short placement (virksomhedspraktik).
 
 ## Architecture & Key Design Decisions
 
@@ -95,7 +97,7 @@ VALUES (CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', CAST('<your-raw-api-key>' AS 
 Ensure Docker is running, as `IntegrationTests` spins up a throwaway SQL Server container and creates named test databases (`ERP_Test_CustomerA`):
 
 ```bash
-dotnet test GoErpApi.slnx
+dotnet test ErpIntegrationApi.slnx
 ```
 
 ## Adding a New Feature Slice (Convention Guide)
